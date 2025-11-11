@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "cs4775-final-project"
+version = "0.1.0"
+description = ""
+authors = ["Lawrence Granda", "Joyce Shen", "Soham Goswami", "Joshua Ochalek"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+scikit-bio = "^0.7.1.post1"
+pylint = "^4.0.2"
+black = "^25.11.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
