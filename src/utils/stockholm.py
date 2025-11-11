@@ -26,7 +26,7 @@ def _uppercase_stockholm_sequences(file_path: str) -> io.StringIO:
                 parts = stripped.split(None, 1)
                 if len(parts) == 2:
                     name, seq = parts
-                    # Preserve the exact spacing between fields by reconstructing with original separator
+                    # Preserve the exact spacing between fields
                     space_index = raw.find(" ")
                     if space_index != -1:
                         before = raw[:space_index]
@@ -81,9 +81,7 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     ]
 
     if len(aligned_sequences) != len(original_sequences) or len(aligned_sequences) != 2:
-        raise ValueError(
-            f"Expected 2 or {len(aligned_sequences)} aligned sequences, got {len(aligned_sequences)}"
-        )
+        raise ValueError(f"Expected 2 aligned sequences, got {len(aligned_sequences)}")
 
     return Alignment(
         name=os.path.basename(file_path),
