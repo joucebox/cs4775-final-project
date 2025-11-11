@@ -1,6 +1,7 @@
 """Functions for working with Stockholm files."""
 
 import io
+import os
 
 from skbio import RNA, TabularMSA
 from src.types import Alignment
@@ -57,7 +58,7 @@ def read_rna_stockholm(file_path: str) -> Alignment:
         aligned_sequences.append(rna_sequence_from_skbio(seq))
 
     return Alignment(
-        name=msa.metadata.get("name"),
+        name=os.path.basename(file_path),
         aligned_sequences=aligned_sequences,
         original_sequences=aligned_sequences,
     )
