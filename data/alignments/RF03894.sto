@@ -1,0 +1,11 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.4
+
+#=GS HE587301.1/1407254-1407175 DE Tetranychus urticae London genomic scaffold, scaffold_1, whole genome shotgun sequence
+#=GS HE587301.1/1424745-1424667 DE Tetranychus urticae London genomic scaffold, scaffold_1, whole genome shotgun sequence
+
+HE587301.1/1407254-1407175         AAAUACCUUUGCGGAGUUGAUUGGGCGAAUGGGUCUUAAACAAUCAACCAUCUGCCCAAUCGACUCCAAAAAAAGUAUUA
+HE587301.1/1424745-1424667         AAAUACUUUUGCGGAGUAGACUGGUCAAAUGGGUCUUAAACAAUCAAUCAUUUCGCCAAUCUACUGCAAAGAA-GUAUUC
+#=GC SS_cons                       :<<<<<<<<<--<<<<<<<<<<<<<<<<<<<<_______________>>>>>>>>>>>>>>>>>>>>-->>>>->>>>>:
+#=GC RF                            AaauaCuuuuGCGgaGucGauuGGgcaaauGgGUCUUAAACAAUCAAcCauuugcCCaauCgaCucCAAaaaaAGuauua
+//

@@ -1,0 +1,11 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.4
+
+#=GS CP002684.1/21360151-21360251 DE Arabidopsis thaliana chromosome 1 sequence
+#=GS CP002684.1/21360251-21360151 DE Arabidopsis thaliana chromosome 1 sequence
+
+CP002684.1/21360151-21360251         UUCAUAUUAUAGUAACCAACAUAUUCAAUACUUUCAAAUGAAGAAAAAUAAUUGGCAUCUUCAUUUGAAAGUAUUGAAUAUGUUGGUUACUAUAAUAUGAA
+CP002684.1/21360251-21360151         UUCAUAUUAUAGUAACCAACAUAUUCAAUACUUUCAAAUGAAGAUGCCAAUUAUUUUUCUUCAUUUGAAAGUAUUGAAUAUGUUGGUUACUAUAAUAUGAA
+#=GC SS_cons                         :<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<_____________>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:
+#=GC RF                              UucauauuauaGuaaccaacauauucaauacuuucaaauGaaGaaaaaaAaUauuuauCuuCauuugaaaguauugaauauguugguuaCuauaauaugaA
+//

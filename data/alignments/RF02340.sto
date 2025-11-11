@@ -1,0 +1,17 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.4
+
+#=GS U88536.1/1-69                 DE Dengue virus type 1 clone 45AZ5, complete genome
+#=GS AY632535.2/1-71               DE Zika virus strain MR 766, complete genome
+#=GS LR584416.1/17420591-17420657  DE Salmo trutta genome assembly, chromosome: 3
+#=GS JAACNH010001449.1/26290-26370 DE Hymenochirus boettgeri isolate Female2 Sca1440, whole genome shotgun sequence
+#=GS CM024954.1/43494792-43494723  DE Rhododendron simsii isolate adult_tree_wgs_1 chromosome 2, whole genome shotgun sequence
+
+U88536.1/1-69                         AGUUGUUAGUCUACGUGGACC.GACAAGAACAGUU.....................UCGAAUC.GGAAGCU..-UGCUUAACGUAGUUCUAACAG
+AY632535.2/1-71                       AGUUGUUGAUCUGUGUGAGUCaGACUGCGACA-GU.....................UCGAGUCuGAAGCGA..GAGCUAACAACAGUAUCAACAG
+LR584416.1/17420591-17420657          AGAUGUUAGCCUCGGGGAGCU.AGCUAAAUCAG--.....................ACGCUUU.GGCAUAA..-UAUUUAAAUGAGUGCUAACAG
+JAACNH010001449.1/26290-26370         AGUUGUUAUGCUGUGUGCAGU.UAUAAC-------aguugguaucugugugcagua-----UA.ACAGUUGguAUGCUGUGUACAGUUAUAACAG
+CM024954.1/43494792-43494723          GGAUGCUAAUUUGCUUGAAUC.GAUAGAAUGA-AU.....................AUAGAUU.GAAAACA.aGCACUGAGAGCAGUUUGAGCAG
+#=GC SS_cons                          :::<<<<<<<<<<<<<-<<<<.<----<<<_____~~~~~~~~~~~~~~~~~~~~~>>--->>.>>-----..---->>->>>>>>->>>>>>>:
+#=GC RF                               AGUuGUUaGuCUGcGuGgACC.gACAAggaCAGuU~~~~~~~~~~~~~~~~~~~~~ucuAuuc.GGAAgcu..AaGcUcAaCgCAGUuCuAACaG
+//

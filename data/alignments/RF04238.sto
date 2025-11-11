@@ -1,0 +1,11 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.4
+
+#=GS HT000122.2/278893-278955 DE TPA_asm: Ciona intestinalis DNA, scaffold: KhL4, whole genome shotgun sequence
+#=GS HT000122.2/280368-280426 DE TPA_asm: Ciona intestinalis DNA, scaffold: KhL4, whole genome shotgun sequence
+
+HT000122.2/278893-278955         AAGCUUAUGUUCAUGUAUGCUGUGUGUAUAUAUGUGUGGUACAGCAUUAUGUAUAUGUGAGCU
+HT000122.2/280368-280426         AAGCUUAUGUUCAUGUAUGCUGUGUGUAUAUAUGUG--GUACAGCAUUAUGUAU--GUGAGCU
+#=GC SS_cons                     :<<<<<<<<<-<<<<-<<<<<<<<--<<<____>>>--->>>>>>>>>>>>->>-->>>>>>>
+#=GC RF                          AAGCUuAugUUCAUgUAUGCUGUgUGuAuAUAUgUgUGGuACAGCAUuAUGUAuAUgUgAGCU
+//

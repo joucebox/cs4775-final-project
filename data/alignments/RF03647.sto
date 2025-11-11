@@ -1,0 +1,11 @@
+# STOCKHOLM 1.0
+#=GF AU Infernal 1.1.4
+
+#=GS GL380282.1/73196-73137   DE Caenorhabditis brenneri unplaced genomic scaffold Scfld02_496, whole genome shotgun sequence
+#=GS GL379965.1/139214-139273 DE Caenorhabditis brenneri unplaced genomic scaffold Scfld02_179, whole genome shotgun sequence
+
+GL380282.1/73196-73137           UGAACAUCCUGGUGACCAAACACAGUUAAAUCGGGAUGUUUGGUCGUCGAGACGUUCAAA
+GL379965.1/139214-139273         UGAACAUCCUGGUGACCAAACACAGUUGAUUCGGGAUGUUUGGUCGUCGAGACGUUCAAA
+#=GC SS_cons                     <<<<<-<<-<<<<<<<<<<<<<<-<______>-->->>>>>>>>>>>>>->>->>>>>::
+#=GC RF                          UGAACAUCCuGguGACCAAACACAGUUaAuUCGGGAUGUUUGGUCguCgAGACGUUCAAA
+//
