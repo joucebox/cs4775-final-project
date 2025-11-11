@@ -37,7 +37,7 @@ class RNASequence(SequenceType):
 
     # Additional RNA-specific helpers can be added here in the future.
     def _validate(self) -> None:
-        allowed = {"A", "C", "G", "U", "."}
+        allowed = {"A", "C", "G", "T", "U", "."}
         invalid = {ch for ch in self.residues if ch not in allowed}
         if invalid:
             raise ValueError(
