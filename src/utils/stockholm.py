@@ -4,8 +4,9 @@ import io
 import os
 
 from skbio import RNA, TabularMSA
+
 from src.types import Alignment
-from .fasta import rna_sequence_from_skbio
+from .fasta import rna_sequence_from_skbio, read_rna_fasta
 
 
 def _uppercase_stockholm_sequences(file_path: str) -> io.StringIO:
@@ -51,16 +52,43 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     """Read a Stockholm file and return an Alignment."""
     # Preprocess to uppercase aligned sequence characters to satisfy RNA alphabet
     fh = _uppercase_stockholm_sequences(file_path)
+
     msa = TabularMSA.read(fh, constructor=RNA)
 
+    # Determine matching FASTA path with same basename under sibling 'fasta' dir
+    sto_path = os.path.abspath(file_path)
+    base = os.path.splitext(os.path.basename(sto_path))[0]
+    data_root = os.path.dirname(os.path.dirname(sto_path))  # .../data
+    fasta_path = os.path.join(data_root, "fasta", f"{base}.fa")
+
+    # Read FASTA and build a lookup by identifier
+    fasta_sequences = read_rna_fasta(fasta_path)
+    fasta_by_id = {seq.identifier: seq for seq in fasta_sequences}
+    allowed_ids = set(fasta_by_id.keys())
+
+    # Build aligned sequences from MSA that are present in FASTA
     aligned_sequences = []
     for seq in msa:
-        aligned_sequences.append(rna_sequence_from_skbio(seq))
+        identifier = (getattr(seq, "metadata", {}) or {}).get("id") or ""
+        if identifier in allowed_ids:
+            aligned_sequences.append(rna_sequence_from_skbio(seq))
+
+    # Original (unaligned) sequences filtered to the same identifiers
+    original_sequences = [
+        fasta_by_id[s.identifier]
+        for s in aligned_sequences
+        if s.identifier in fasta_by_id
+    ]
+
+    if len(aligned_sequences) != len(original_sequences) or len(aligned_sequences) != 2:
+        raise ValueError(
+            f"Expected 2 or {len(aligned_sequences)} aligned sequences, got {len(aligned_sequences)}"
+        )
 
     return Alignment(
         name=os.path.basename(file_path),
         aligned_sequences=aligned_sequences,
-        original_sequences=aligned_sequences,
+        original_sequences=original_sequences,
     )
 
 
