@@ -19,6 +19,17 @@ class SequenceType(ABC):
     def __len__(self) -> int:
         return len(self.residues)
 
+    def __str__(self) -> str:
+        class_name = self.__class__.__name__
+        joined_residues = "".join(self.residues)
+        return (
+            f"{class_name} (\n"
+            f"   id: {self.identifier}\n"
+            f"   description: {self.description}\n"
+            f"   residues: {joined_residues}\n"
+            f")"
+        )
+
     @abstractmethod
     def _validate(self) -> None:
         """Validate the residues for this sequence type. Raise ValueError if invalid."""
@@ -37,7 +48,7 @@ class RNASequence(SequenceType):
 
     # Additional RNA-specific helpers can be added here in the future.
     def _validate(self) -> None:
-        allowed = {"A", "C", "G", "T", "U", "."}
+        allowed = {"A", "C", "G", "T", "U", "-", "."}
         invalid = {ch for ch in self.residues if ch not in allowed}
         if invalid:
             raise ValueError(
