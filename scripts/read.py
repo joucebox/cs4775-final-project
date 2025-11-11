@@ -26,10 +26,7 @@ def print_fasta_sequences(folder_path):
             print(f"--- {filename} ---")
             sequences = read_rna_fasta(file_path)
             for seq in sequences:
-                print(f"ID: {seq.identifier}")
-                print(f"Description: {seq.description}")
-                print(f"Residues: {''.join(seq.residues)}")
-                print()
+                print(seq)
 
 
 def print_stockholm_alignments(folder_path):
