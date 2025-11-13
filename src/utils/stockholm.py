@@ -2,6 +2,7 @@
 
 import io
 import os
+from typing import List
 
 from skbio import RNA, TabularMSA
 
@@ -90,4 +91,13 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     )
 
 
-__all__ = ["read_rna_stockholm"]
+def collect_alignments(folder_path: str) -> List[Alignment]:
+    """Collect all alignments from the given folder."""
+    alignments = []
+    for file_path in os.listdir(folder_path):
+        if file_path.lower().endswith(".sto"):
+            alignments.append(read_rna_stockholm(os.path.join(folder_path, file_path)))
+    return alignments
+
+
+__all__ = ["collect_alignments"]
