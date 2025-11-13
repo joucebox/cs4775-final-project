@@ -7,7 +7,7 @@ from skbio import RNA
 from src.types import RNASequence, SequenceType
 
 
-def rna_sequence_from_skbio(record: RNA) -> RNASequence:
+def rna_sequence_from_skbio(record: RNA, aligned: bool) -> RNASequence:
     """Convert a scikit-bio record to an RNASequence."""
     metadata = getattr(record, "metadata", {}) or {}
     identifier = metadata.get("id") or ""
@@ -18,6 +18,7 @@ def rna_sequence_from_skbio(record: RNA) -> RNASequence:
         identifier=identifier,
         residues=list(seq_str),
         description=description,
+        aligned=aligned,
     )
 
 
@@ -28,7 +29,7 @@ def read_rna_fasta(file_path: str) -> List[SequenceType]:
     """
     sequences: List[RNASequence] = []
     for record in skbio.io.read(file_path, format="fasta"):
-        sequences.append(rna_sequence_from_skbio(record))
+        sequences.append(rna_sequence_from_skbio(record, aligned=False))
     return sequences
 
 

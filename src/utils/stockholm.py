@@ -71,7 +71,7 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     for seq in msa:
         identifier = (getattr(seq, "metadata", {}) or {}).get("id") or ""
         if identifier in allowed_ids:
-            aligned_sequences.append(rna_sequence_from_skbio(seq))
+            aligned_sequences.append(rna_sequence_from_skbio(seq, aligned=True))
 
     # Original (unaligned) sequences filtered to the same identifiers
     original_sequences = [

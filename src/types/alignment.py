@@ -14,6 +14,15 @@ class Alignment:
     aligned_sequences: List[SequenceType]
     original_sequences: List[SequenceType]
 
+    def __post_init__(self):
+        # Validate that all aligned_sequences have aligned=True
+        if any(s.aligned is False for s in self.aligned_sequences):
+            raise ValueError("All aligned_sequences must have aligned=True.")
+
+        # Validate that all original_sequences have aligned=False
+        if any(s.aligned is True for s in self.original_sequences):
+            raise ValueError("All original_sequences must have aligned=False.")
+
     @property
     def num_sequences(self) -> int:
         """Number of sequences in the alignment."""

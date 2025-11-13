@@ -12,6 +12,7 @@ class SequenceType(ABC):
     identifier: str
     residues: List[str]
     description: Optional[str] = None
+    aligned: bool = False
 
     def __post_init__(self) -> None:
         self._validate()
@@ -24,7 +25,7 @@ class SequenceType(ABC):
         joined_residues = "".join(self.residues)
         return (
             f"{class_name} (\n"
-            f"   id: {self.identifier}\n"
+            f"   id: {self.identifier} ({'aligned' if self.aligned else 'unaligned'})\n"
             f"   description: {self.description}\n"
             f"   residues: {joined_residues}\n"
             f")"
