@@ -1,0 +1,55 @@
+metadata:
+  alignments_dir: /Users/lawrencegranda/Documents/laptop/academics/college/projects/cs4775-final-project/data/alignments
+  num_alignments: 9
+parameters:
+  log_emissions:
+    match:
+      A:
+        A: -0.165877
+        C: -3.557942
+        G: -2.52185
+        U: -3.122624
+      C:
+        A: -4.398556
+        C: -0.14531
+        G: -3.299944
+        U: -2.452646
+      G:
+        A: -2.387743
+        C: -3.285684
+        G: -0.207116
+        U: -2.850366
+      U:
+        A: -3.273364
+        C: -3.036975
+        G: -4.035504
+        U: -0.109296
+    insert_x:
+      A: -1.386294
+      C: -2.995732
+      G: -1.049822
+      U: -1.049822
+    insert_y:
+      A: -2.890372
+      C: -1.791759
+      G: -0.693147
+      U: -1.280934
+  log_transitions:
+    matrix:
+      M:
+        M: -0.014218
+        X: -4.585752
+        Y: -5.541264
+      X:
+        M: -0.37949
+        X: -1.335001
+        Y: -2.944439
+      Y:
+        M: -1.466337
+        X: -2.564949
+        Y: -0.367725
+  gaps:
+    delta: 0.014118
+    epsilon: 0.477733
+    epsilon_x: 0.263158
+    epsilon_y: 0.692308
