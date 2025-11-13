@@ -15,6 +15,16 @@ class Alignment:
     original_sequences: List[SequenceType]
 
     def __post_init__(self):
+        # Validate that there are at least 2 sequences
+        if self.num_sequences < 2:
+            raise ValueError("At least 2 sequences are required.")
+
+        # Validate that the number of aligned_sequences and original_sequences is the same
+        if len(self.aligned_sequences) != len(self.original_sequences):
+            raise ValueError(
+                "aligned_sequences and original_sequences must have the same length."
+            )
+
         # Validate that all aligned_sequences have aligned=True
         if any(s.aligned is False for s in self.aligned_sequences):
             raise ValueError("All aligned_sequences must have aligned=True.")
@@ -22,6 +32,10 @@ class Alignment:
         # Validate that all original_sequences have aligned=False
         if any(s.aligned is True for s in self.original_sequences):
             raise ValueError("All original_sequences must have aligned=False.")
+
+        # Validate that all aligned_sequences have the same length
+        if any(len(s) != self.columns for s in self.aligned_sequences):
+            raise ValueError("All aligned_sequences must have the same length.")
 
     @property
     def num_sequences(self) -> int:
@@ -31,8 +45,6 @@ class Alignment:
     @property
     def columns(self) -> Optional[int]:
         """Number of columns in the alignment."""
-        if not self.aligned_sequences:
-            return None
         return len(self.aligned_sequences[0])
 
     def __str__(self) -> str:
@@ -51,7 +63,7 @@ class Alignment:
         return (
             f"{class_name} (\n"
             f"   name: {self.name}\n"
-            f"   aligned_sequences:\n{aligned_str}\n"
+            f"   aligned_sequences (columns: {self.columns}):\n{aligned_str}\n"
             f"   original_sequences:\n{original_str}\n"
             f")"
         )
