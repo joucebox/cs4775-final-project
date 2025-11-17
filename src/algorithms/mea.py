@@ -2,15 +2,26 @@
 
 from __future__ import annotations
 
+from src.algorithms.base import PairwiseAligner
 from src.algorithms.hmm import PairHMM
-from src.types.sequence import SequenceType
+from src.types import AlignmentResult, SequenceType
 
 
-def compute_mea(hmm: PairHMM, x_seq: SequenceType, y_seq: SequenceType) -> float:
-    """Compute the Maximum Expected Accuracy (MEA) for a pairwise sequence alignment."""
-    pass
+class MEAAligner(PairwiseAligner):
+    """Maximum Expected Accuracy (MEA) alignment algorithm."""
+
+    def __init__(self, gamma: float = 1.0) -> None:
+        """Initialize the MEA aligner with a configurable gamma parameter."""
+        self.gamma = gamma
+
+    def align(
+        self,
+        hmm: PairHMM,
+        x_seq: SequenceType,
+        y_seq: SequenceType,
+    ) -> AlignmentResult:
+        """Align two sequences by maximizing expected accuracy."""
+        raise NotImplementedError
 
 
-def mea_alignment(hmm: PairHMM, x_seq: SequenceType, y_seq: SequenceType) -> Alignment:
-    """Compute the Maximum Expected Accuracy (MEA) alignment for a pairwise sequence alignment."""
-    pass
+__all__ = ["MEAAligner"]
