@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import List, Optional
+import numpy as np
 
 from .sequence import SequenceType
 
@@ -69,4 +70,19 @@ class Alignment:
         )
 
 
-__all__ = ["Alignment"]
+@dataclass(frozen=True)
+class AlignmentResult:
+    """Result of a pairwise alignment algorithm.
+
+    Attributes:
+        alignment: The pairwise alignment of two sequences
+        score: The alignment score (log-likelihood for Viterbi, expected accuracy for MEA)
+        posteriors: Optional (n+1) x (m+1) matrix of posterior match probabilities
+    """
+
+    alignment: Alignment
+    score: float
+    posteriors: Optional[np.ndarray] = None
+
+
+__all__ = ["Alignment", "AlignmentResult"]
