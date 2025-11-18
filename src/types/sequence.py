@@ -13,6 +13,7 @@ class SequenceType(ABC):
     residues: List[str]
     description: Optional[str] = None
     aligned: bool = False
+    normalized: bool = False
 
     def __post_init__(self) -> None:
         self._validate()
@@ -32,6 +33,16 @@ class SequenceType(ABC):
         )
 
     @abstractmethod
+    def normalize(self) -> "SequenceType":
+        """Normalize the residues for this sequence type. Return a new SequenceType with normalized residues."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def denormalize(self) -> List[str]:
+        """Denormalize the residues for this sequence type. Return a list of denormalized residues."""
+        raise NotImplementedError
+
+    @abstractmethod
     def _validate(self) -> None:
         """Validate the residues for this sequence type. Raise ValueError if invalid."""
         raise NotImplementedError
@@ -47,12 +58,44 @@ class RNASequence(SequenceType):
         object.__setattr__(self, "residues", uppercased)
         super().__post_init__()
 
+    def normalize(self) -> "RNASequence":
+        """Normalize the residues for this sequence type. Return a new SequenceType with normalized residues."""
+        if self.normalized is True:
+            raise ValueError("Sequence is already normalized.")
+        if self.aligned is True:
+            raise ValueError("Cannot normalize aligned sequence.")
+
+        return RNASequence(
+            identifier=self.identifier,
+            residues=[res.upper().replace("T", "U") for res in self.residues],
+            description=self.description,
+            aligned=self.aligned,
+            normalized=True,
+        )
+
+    def denormalize(self) -> "RNASequence":
+        """Denormalize the residues for this sequence type. Return a list of denormalized residues."""
+        if self.normalized is False:
+            raise ValueError("Sequence is not normalized.")
+        if self.aligned is True:
+            raise ValueError("Cannot denormalize aligned sequence.")
+
+        return RNASequence(
+            identifier=self.identifier,
+            residues=[res.upper().replace("U", "T") for res in self.residues],
+            description=self.description,
+            aligned=self.aligned,
+            normalized=False,
+        )
+
     # Additional RNA-specific helpers can be added here in the future.
     def _validate(self) -> None:
         if self.aligned is True:
             allowed = {"A", "C", "G", "U", "-", "."}
-        else:
+        elif self.normalized is False:
             allowed = {"A", "C", "G", "T"}
+        else:
+            allowed = {"A", "C", "G", "U"}
 
         invalid = {ch for ch in self.residues if ch not in allowed}
         if invalid:
