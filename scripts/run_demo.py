@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from src.algorithms.hmm import PairHMM  # pylint: disable=C0413
 from src.algorithms.viterbi import ViterbiAligner  # pylint: disable=C0413
+from src.algorithms.mea import MEAAligner  # pylint: disable=C0413
 from src.types import SequenceType  # pylint: disable=C0413
 from src.types.parameters import (  # pylint: disable=C0413
     EmissionParameters,
@@ -59,7 +60,7 @@ def format_alignment(seqs: Tuple[SequenceType, SequenceType]) -> str:
     lines = []
     for seq in seqs:
         residues = "".join(seq.residues)
-        lines.append(f"{seq.identifier:>10}: {residues}")
+        lines.append(f"{seq.identifier:>20}: {residues}")
     return "\n".join(lines)
 
 
@@ -95,11 +96,24 @@ def main() -> None:
     result = aligner.align(hmm, seq_x, seq_y)
     viterbi_alignment = result.alignment.aligned_sequences
 
+    mea_aligner = MEAAligner()
+    mea_result = mea_aligner.align(hmm, seq_x, seq_y)
+    mea_alignment = mea_result.alignment.aligned_sequences
+
     print("Reference alignment (Stockholm):")
     print(format_alignment(tuple(reference.aligned_sequences)))
+
+    print("\n ======================== Viterbi ========================")
     print("\nViterbi alignment:")
     print(format_alignment(tuple(viterbi_alignment)))
     print(f"\nViterbi log-score: {result.score:.6f}")
+    print(f"\nViterbi posteriors: {result.posteriors}")
+
+    print("\n ======================== MEA ========================")
+    print("\nMEA alignment:")
+    print(format_alignment(tuple(mea_alignment)))
+    print(f"\nMEA log-score: {mea_result.score:.6f}")
+    print(f"\nMEA posteriors: {mea_result.posteriors}")
 
 
 if __name__ == "__main__":
