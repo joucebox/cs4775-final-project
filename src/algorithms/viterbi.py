@@ -168,13 +168,19 @@ class ViterbiAligner(PairwiseAligner):
         y_seq: SequenceType,
     ) -> np.ndarray:
         """Compute posterior match probabilities using forward/backward tables."""
-        F_M, _, _, logZ_forward = compute_forward(hmm, x_seq, y_seq)
-        B_M, _, _, logZ_backward = compute_backward(hmm, x_seq, y_seq)
+        F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+        B_M, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
-        if math.isfinite(logZ_forward) and math.isfinite(logZ_backward):
-            logZ = (logZ_forward + logZ_backward) * 0.5
+        if math.isfinite(logZ_f) and math.isfinite(logZ_b):
+            if abs(logZ_f - logZ_b) > 1e-5:
+                raise ValueError(
+                    f"Forward and backward log-normalizers disagree by more than allowed: {logZ_f} vs {logZ_b}"
+                )
+            logZ = (logZ_f + logZ_b) * 0.5
         else:
-            logZ = logZ_forward if math.isfinite(logZ_forward) else logZ_backward
+            raise ValueError(
+                f"Forward and backward log-normalizers are not finite: {logZ_f} vs {logZ_b}"
+            )
 
         n, m = len(x_seq), len(y_seq)
         posteriors = np.zeros((n + 1, m + 1), dtype=float)

@@ -45,10 +45,17 @@ class MEAAligner(PairwiseAligner):
         F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
         B_M, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
-        if logZ_f == float("-inf") or logZ_b == float("-inf"):
-            raise ValueError("No valid paths found.")
+        if math.isfinite(logZ_f) and math.isfinite(logZ_b):
+            if abs(logZ_f - logZ_b) > 1e-5:
+                raise ValueError(
+                    f"Forward and backward log-normalizers disagree by more than allowed: {logZ_f} vs {logZ_b}"
+                )
+            logZ = (logZ_f + logZ_b) * 0.5
+        else:
+            raise ValueError(
+                f"Forward and backward log-normalizers are not finite: {logZ_f} vs {logZ_b}"
+            )
 
-        logZ = logZ_f
         n = len(x_seq)
         m = len(y_seq)
         post_M = np.zeros((n + 1, m + 1), dtype=float)
