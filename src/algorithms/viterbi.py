@@ -216,7 +216,7 @@ class ViterbiAligner(PairwiseAligner):
         return Alignment(
             name=f"Viterbi_{x_seq.identifier}_vs_{y_seq.identifier}",
             aligned_sequences=[aligned_seq_x, aligned_seq_y],
-            original_sequences=[x_seq, y_seq],
+            original_sequences=[x_seq.denormalize(), y_seq.denormalize()],
         )
 
     def align(
@@ -226,6 +226,9 @@ class ViterbiAligner(PairwiseAligner):
         y_seq: SequenceType,
     ) -> AlignmentResult:
         """Compute the Viterbi alignment for the provided sequences."""
+        x_seq = x_seq.normalize()
+        y_seq = y_seq.normalize()
+
         n = len(x_seq)
         m = len(y_seq)
         x = x_seq.residues
