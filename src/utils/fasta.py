@@ -22,6 +22,11 @@ def rna_sequence_from_skbio(record: RNA, aligned: bool) -> RNASequence:
     )
 
 
+def normalize_residues(seq_list: list[str]) -> list[str]:
+    """Normalize residues in a list of strings: uppercase and convert thymine to uracil."""
+    return [res.upper().replace("T", "U") for res in seq_list]
+
+
 def read_rna_fasta(file_path: str) -> List[SequenceType]:
     """Read a FASTA file and return a list of RNASequence.
 
@@ -33,4 +38,4 @@ def read_rna_fasta(file_path: str) -> List[SequenceType]:
     return sequences
 
 
-__all__ = ["read_rna_fasta"]
+__all__ = ["read_rna_fasta", "normalize_residues"]
