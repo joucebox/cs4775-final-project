@@ -1,5 +1,5 @@
 metadata:
-  alignments_dir: /Users/jouce/Develop/cornell/4775/cs4775-final-project/data/alignments
+  alignments_dir: /Users/lawrencegranda/Documents/laptop/academics/college/projects/cs4775-final-project/data/alignments
   num_alignments: 9
 parameters:
   log_emissions:
@@ -41,15 +41,15 @@ parameters:
         X: -4.585752
         Y: -5.541264
       X:
-        M: -0.37949
-        X: -1.335001
-        Y: -2.944439
+        M: -0.325422
+        X: -1.280934
+        Y: -.inf
       Y:
-        M: -1.466337
-        X: -2.564949
-        Y: -0.367725
+        M: -1.386294
+        X: -.inf
+        Y: -0.287682
   gaps:
     delta: 0.014118
-    epsilon: 0.477733
-    epsilon_x: 0.263158
-    epsilon_y: 0.692308
+    epsilon: 0.513889
+    epsilon_x: 0.277778
+    epsilon_y: 0.75

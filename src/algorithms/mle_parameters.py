@@ -192,12 +192,38 @@ def _normalize_transitions(
         outgoing_total = sum(
             transition_counts[state][target] + pseudocount for target in STATES
         )
+        # Force X -> Y and Y -> X transitions to probability zero regardless of counts
         for target in STATES:
-            numerator = transition_counts[state][target] + pseudocount
-            if outgoing_total == 0:
+            # Set these two transitions to zero BEFORE normalization (so they receive zero probability)
+            if (state == "X" and target == "Y") or (state == "Y" and target == "X"):
                 transition_probs[state][target] = 0.0
             else:
-                transition_probs[state][target] = numerator / outgoing_total
+                numerator = transition_counts[state][target] + pseudocount
+                if outgoing_total == 0:
+                    transition_probs[state][target] = 0.0
+                else:
+                    transition_probs[state][target] = numerator / outgoing_total
+
+        # After assigning probs, re-normalize so row sums to 1 (excluding the two impossible transitions)
+        allowed_prob_sum = sum(
+            prob
+            for target, prob in transition_probs[state].items()
+            if not (
+                (state == "X" and target == "Y") or (state == "Y" and target == "X")
+            )
+        )
+        if allowed_prob_sum > 0:
+            for target in STATES:
+                if (state == "X" and target == "Y") or (state == "Y" and target == "X"):
+                    transition_probs[state][target] = 0.0
+                else:
+                    transition_probs[state][target] = (
+                        transition_probs[state][target] / allowed_prob_sum
+                    )
+        else:
+            # If no allowed counts, leave all probabilities at zero
+            for target in STATES:
+                transition_probs[state][target] = 0.0
 
     transition_logs: TransitionProbMatrix = {state: {} for state in STATES}
     for state in STATES:
