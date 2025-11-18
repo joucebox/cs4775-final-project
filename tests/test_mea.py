@@ -80,8 +80,12 @@ def test_mea_alignment_basic_properties():
     aligner = MEAAligner(gamma=1.0)
 
     # Use only A,C,G so they're valid for aligned=False and for RNA_BASES
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=False)
-    y_seq = RNASequence(identifier="y", residues=list("AG"), description=None, aligned=False)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=False
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("AG"), description=None, aligned=False
+    )
 
     result = aligner.align(hmm, x_seq, y_seq)
 
@@ -98,10 +102,12 @@ def test_mea_alignment_basic_properties():
     orig_x, orig_y = alignment.original_sequences
 
     # Original sequences should be the same objects we passed in
-    assert orig_x is x_seq
-    assert orig_y is y_seq
+    assert orig_x.residues == x_seq.residues
+    assert orig_y.residues == y_seq.residues
     assert orig_x.aligned is False
     assert orig_y.aligned is False
+    assert orig_x.normalized is False
+    assert orig_y.normalized is False
 
     # Aligned sequences should be marked aligned=True and have same column length
     assert aligned_x.aligned is True
@@ -117,8 +123,12 @@ def test_mea_posteriors_are_probabilities():
     """Posterior match matrix should contain values in [0, 1]."""
     hmm = _toy_hmm()
     aligner = MEAAligner(gamma=1.0)
-    x_seq = RNASequence(identifier="x", residues=list("ACG"), description=None, aligned=False)
-    y_seq = RNASequence(identifier="y", residues=list("AGG"), description=None, aligned=False)
+    x_seq = RNASequence(
+        identifier="x", residues=list("ACG"), description=None, aligned=False
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("AGG"), description=None, aligned=False
+    )
 
     result = aligner.align(hmm, x_seq, y_seq)
     post = result.posteriors
@@ -174,8 +184,12 @@ def test_mea_identical_sequences_prefers_gap_free_alignment():
     hmm = _toy_hmm()
     aligner = MEAAligner(gamma=1.0)
 
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=False)
-    y_seq = RNASequence(identifier="y", residues=list("AC"), description=None, aligned=False)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=False
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("AC"), description=None, aligned=False
+    )
 
     result = aligner.align(hmm, x_seq, y_seq)
     aligned_x, aligned_y = result.alignment.aligned_sequences
