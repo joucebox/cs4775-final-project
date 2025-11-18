@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import math
 from typing import List, Optional, Tuple
 
+import numpy as np
+
 from src.algorithms.base import PairwiseAligner
+from src.algorithms.forward_backward import compute_backward, compute_forward
 from src.algorithms.hmm import PairHMM
 from src.types import Alignment, AlignmentResult, SequenceType
 
@@ -157,6 +161,32 @@ class ViterbiAligner(PairwiseAligner):
         best_state = max(end_vals, key=end_vals.get)
         return end_vals[best_state], best_state
 
+    def _compute_match_posteriors(
+        self,
+        hmm: PairHMM,
+        x_seq: SequenceType,
+        y_seq: SequenceType,
+    ) -> np.ndarray:
+        """Compute posterior match probabilities using forward/backward tables."""
+        F_M, _, _, logZ_forward = compute_forward(hmm, x_seq, y_seq)
+        B_M, _, _, logZ_backward = compute_backward(hmm, x_seq, y_seq)
+
+        if math.isfinite(logZ_forward) and math.isfinite(logZ_backward):
+            logZ = (logZ_forward + logZ_backward) * 0.5
+        else:
+            logZ = logZ_forward if math.isfinite(logZ_forward) else logZ_backward
+
+        n, m = len(x_seq), len(y_seq)
+        posteriors = np.zeros((n + 1, m + 1), dtype=float)
+
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                if F_M[i][j] == NEG_INF or B_M[i][j] == NEG_INF:
+                    continue
+                posteriors[i][j] = math.exp(F_M[i][j] + B_M[i][j] - logZ)
+
+        return posteriors
+
     def _traceback(
         self,
         Psi_M: List[List[Optional[str]]],
@@ -243,8 +273,13 @@ class ViterbiAligner(PairwiseAligner):
 
         score, best_state = self._compute_termination(V_M, V_X, V_Y, hmm, n, m)
         alignment = self._traceback(Psi_M, Psi_X, Psi_Y, x_seq, y_seq, best_state)
+        posteriors = self._compute_match_posteriors(hmm, x_seq, y_seq)
 
-        return AlignmentResult(alignment=alignment, score=score, posteriors=None)
+        return AlignmentResult(
+            alignment=alignment,
+            score=score,
+            posteriors=posteriors,
+        )
 
 
 __all__ = ["ViterbiAligner"]
