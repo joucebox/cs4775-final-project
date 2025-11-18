@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -35,37 +35,24 @@ class MEAAligner(PairwiseAligner):
             raise ValueError("gamma must be positive.")
         self.gamma = gamma
 
-    def align(
+    def _compute_match_posteriors(
         self,
         hmm: PairHMM,
         x_seq: SequenceType,
         y_seq: SequenceType,
-    ) -> AlignmentResult:
-        """Align two sequences by maximizing expected accuracy."""
-        n = len(x_seq)
-        m = len(y_seq)
-        x = x_seq.residues
-        y = y_seq.residues
-
-        # --- 1. Forward/backward to get posteriors on M(i,j) ---
-
+    ) -> np.ndarray:
+        """Run forward/backward algorithms and return match posteriors."""
         F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
         B_M, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
-        # If no valid paths, return a trivial alignment with score 0.
         if logZ_f == float("-inf") or logZ_b == float("-inf"):
-            alignment = self._build_trivial_alignment(x_seq, y_seq)
-            return AlignmentResult(
-                alignment=alignment,
-                score=0.0,
-                posteriors=None,
-            )
+            raise ValueError("No valid paths found.")
 
-        # In principle logZ_f and logZ_b should agree; in practice we trust logZ_f.
         logZ = logZ_f
-
-        # Posterior matrix post_M[i][j] for 0..n, 0..m (we only fill 1..n,1..m)
+        n = len(x_seq)
+        m = len(y_seq)
         post_M = np.zeros((n + 1, m + 1), dtype=float)
+
         for i in range(1, n + 1):
             for j in range(1, m + 1):
                 joint_log = F_M[i][j] + B_M[i][j]
@@ -74,34 +61,46 @@ class MEAAligner(PairwiseAligner):
                 else:
                     post_M[i, j] = math.exp(joint_log - logZ)
 
-        # --- 2. Build MEA weight matrix w[i][j] = post_M[i][j] ** gamma ---
+        return post_M
 
-        w = np.power(post_M, self.gamma)
+    def _build_weight_matrix(self, post_M: np.ndarray) -> np.ndarray:
+        """Raise posterior matrix to gamma power to form MEA weights."""
+        return np.power(post_M, self.gamma)
 
-        # --- 3. MEA DP over w[i][j] ---
-
+    def _initialize_dp_tables(
+        self,
+        n: int,
+        m: int,
+    ) -> Tuple[List[List[float]], List[List[str | None]]]:
+        """Allocate DP score and pointer tables with boundary conditions."""
         dp: List[List[float]] = [[0.0] * (m + 1) for _ in range(n + 1)]
-        # traceback pointers: "M" (match), "X" (gap in y), "Y" (gap in x)
         ptr: List[List[str | None]] = [[None] * (m + 1) for _ in range(n + 1)]
 
-        # Initialize first column: gaps in y (X moves)
         for i in range(1, n + 1):
             dp[i][0] = dp[i - 1][0]
             ptr[i][0] = "X"
 
-        # Initialize first row: gaps in x (Y moves)
         for j in range(1, m + 1):
             dp[0][j] = dp[0][j - 1]
             ptr[0][j] = "Y"
 
-        # Fill interior
+        return dp, ptr
+
+    def _run_mea_dp(
+        self,
+        w: np.ndarray,
+        dp: List[List[float]],
+        ptr: List[List[str | None]],
+        n: int,
+        m: int,
+    ) -> float:
+        """Fill DP tables according to the MEA recurrence."""
         for i in range(1, n + 1):
             for j in range(1, m + 1):
                 score_match = dp[i - 1][j - 1] + w[i, j]
                 score_gap_x = dp[i - 1][j]  # gap in y (X)
                 score_gap_y = dp[i][j - 1]  # gap in x (Y)
 
-                # Choose best; deterministic tie-breaking: M > X > Y
                 best_score = score_match
                 best_move = "M"
                 if score_gap_x > best_score:
@@ -114,10 +113,17 @@ class MEAAligner(PairwiseAligner):
                 dp[i][j] = best_score
                 ptr[i][j] = best_move
 
-        score = dp[n][m]
+        return dp[n][m]
 
-        # --- 4. Traceback to build aligned sequences ---
-
+    def _traceback_alignment(
+        self,
+        ptr: List[List[str | None]],
+        x: List[str],
+        y: List[str],
+        n: int,
+        m: int,
+    ) -> Tuple[List[str], List[str]]:
+        """Trace back through pointer table to recover the alignment."""
         aligned_x_chars: List[str] = []
         aligned_y_chars: List[str] = []
         i, j = n, m
@@ -138,14 +144,21 @@ class MEAAligner(PairwiseAligner):
                 aligned_y_chars.append(y[j - 1])
                 j -= 1
             else:
-                # Should only happen at (0,0), but guard defensively.
                 break
 
         aligned_x_chars.reverse()
         aligned_y_chars.reverse()
 
-        # --- 5. Wrap into Alignment + AlignmentResult ---
+        return aligned_x_chars, aligned_y_chars
 
+    def _build_alignment(
+        self,
+        x_seq: SequenceType,
+        y_seq: SequenceType,
+        aligned_x_chars: List[str],
+        aligned_y_chars: List[str],
+    ) -> Alignment:
+        """Wrap aligned character lists in an Alignment object."""
         aligned_x_seq = type(x_seq)(
             identifier=x_seq.identifier,
             residues=aligned_x_chars,
@@ -159,59 +172,40 @@ class MEAAligner(PairwiseAligner):
             aligned=True,
         )
 
-        alignment = Alignment(
+        return Alignment(
             name=None,
             aligned_sequences=[aligned_x_seq, aligned_y_seq],
-            original_sequences=[x_seq, y_seq],
+            original_sequences=[x_seq.denormalize(), y_seq.denormalize()],
+        )
+
+    def align(
+        self,
+        hmm: PairHMM,
+        x_seq: SequenceType,
+        y_seq: SequenceType,
+    ) -> AlignmentResult:
+        """Align two sequences by maximizing expected accuracy."""
+        x_seq = x_seq.normalize()
+        y_seq = y_seq.normalize()
+
+        n = len(x_seq)
+        m = len(y_seq)
+        x = x_seq.residues
+        y = y_seq.residues
+
+        post_M = self._compute_match_posteriors(hmm, x_seq, y_seq)
+        w = self._build_weight_matrix(post_M)
+        dp, ptr = self._initialize_dp_tables(n, m)
+        score = self._run_mea_dp(w, dp, ptr, n, m)
+        aligned_x_chars, aligned_y_chars = self._traceback_alignment(ptr, x, y, n, m)
+        alignment = self._build_alignment(
+            x_seq, y_seq, aligned_x_chars, aligned_y_chars
         )
 
         return AlignmentResult(
             alignment=alignment,
             score=score,
             posteriors=post_M,
-        )
-
-    @staticmethod
-    def _build_trivial_alignment(
-        x_seq: SequenceType,
-        y_seq: SequenceType,
-    ) -> Alignment:
-        """Fallback alignment when logZ is -inf: align everything against gaps.
-
-        This should rarely happen in sane parameter settings, but provides
-        a defined object rather than raising.
-        """
-        x = x_seq.residues
-        y = y_seq.residues
-
-        aligned_x: List[str] = []
-        aligned_y: List[str] = []
-
-        # Simple global-style: x against gaps, then gaps against y
-        for ch in x:
-            aligned_x.append(ch)
-            aligned_y.append("-")
-        for ch in y:
-            aligned_x.append("-")
-            aligned_y.append(ch)
-
-        aligned_x_seq = type(x_seq)(
-            identifier=x_seq.identifier,
-            residues=aligned_x,
-            description=x_seq.description,
-            aligned=True,
-        )
-        aligned_y_seq = type(y_seq)(
-            identifier=y_seq.identifier,
-            residues=aligned_y,
-            description=y_seq.description,
-            aligned=True,
-        )
-
-        return Alignment(
-            name=None,
-            aligned_sequences=[aligned_x_seq, aligned_y_seq],
-            original_sequences=[x_seq, y_seq],
         )
 
 
