@@ -84,10 +84,52 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     if len(aligned_sequences) != len(original_sequences) or len(aligned_sequences) != 2:
         raise ValueError(f"Expected 2 aligned sequences, got {len(aligned_sequences)}")
 
+    return _clean_alignment(
+        Alignment(
+            name=os.path.basename(file_path),
+            aligned_sequences=aligned_sequences,
+            original_sequences=original_sequences,
+        )
+    )
+
+
+def _clean_alignment(alignment: Alignment) -> Alignment:
+    """Clean the alignment by removing columns where all aligned sequences have a gap."""
+    seqs = [list(seq.residues) for seq in alignment.aligned_sequences]
+    if not seqs:
+        return alignment
+
+    seq_len = len(seqs[0])
+
+    # Identify columns where all entries are gaps
+    columns_to_remove = []
+    for col_idx in range(seq_len):
+        column = [seq[col_idx] for seq in seqs]
+        if all(residue in ("-", ".") for residue in column):
+            columns_to_remove.append(col_idx)
+
+    # Build new sequences with those columns removed
+    cleaned_seqs = []
+    for seq_idx, seq in enumerate(seqs):
+        new_residues = [
+            seq[col_idx]
+            for col_idx in range(seq_len)
+            if col_idx not in columns_to_remove
+        ]
+        # Replace the residues in the original aligned sequence to keep metadata/id
+        old_seq = alignment.aligned_sequences[seq_idx]
+        cleaned_seq = type(old_seq)(
+            identifier=old_seq.identifier,
+            residues=new_residues,
+            description=old_seq.description,
+            aligned=old_seq.aligned,
+        )
+        cleaned_seqs.append(cleaned_seq)
+
     return Alignment(
-        name=os.path.basename(file_path),
-        aligned_sequences=aligned_sequences,
-        original_sequences=original_sequences,
+        name=alignment.name,
+        aligned_sequences=cleaned_seqs,
+        original_sequences=alignment.original_sequences,
     )
 
 

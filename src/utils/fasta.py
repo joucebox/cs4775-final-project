@@ -12,7 +12,7 @@ def rna_sequence_from_skbio(record: RNA, aligned: bool) -> RNASequence:
     metadata = getattr(record, "metadata", {}) or {}
     identifier = metadata.get("id") or ""
     description = metadata.get("description")
-    seq_str = str(record)
+    seq_str = str(record).replace(".", "-")
 
     return RNASequence(
         identifier=identifier,

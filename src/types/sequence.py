@@ -91,7 +91,7 @@ class RNASequence(SequenceType):
     # Additional RNA-specific helpers can be added here in the future.
     def _validate(self) -> None:
         if self.aligned is True:
-            allowed = {"A", "C", "G", "U", "-", "."}
+            allowed = {"A", "C", "G", "U", "-"}
         elif self.normalized is False:
             allowed = {"A", "C", "G", "T"}
         else:
