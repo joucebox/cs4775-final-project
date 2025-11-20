@@ -7,15 +7,15 @@ from pathlib import Path
 
 import yaml
 
-from constants import ALIGNMENTS_FOLDER, HMM_YAML, PRECISION, PSEUDOCOUNT
+from .constants import ALIGNMENTS_FOLDER, HMM_YAML, PRECISION, PSEUDOCOUNT
 
 # Add the repository root to the Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.utils import collect_alignments, parameters_to_dict  # pylint: disable=C0413
-from src.algorithms.mle_parameters import (  # pylint: disable=C0413
+from src.utils import collect_alignments, parameters_to_dict
+from src.algorithms.mle_parameters import (
     estimate_params_from_alignments,
 )
 

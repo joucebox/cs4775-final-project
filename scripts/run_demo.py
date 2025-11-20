@@ -17,17 +17,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.algorithms.hmm import PairHMM  # pylint: disable=C0413
-from src.algorithms.viterbi import ViterbiAligner  # pylint: disable=C0413
-from src.algorithms.mea import MEAAligner  # pylint: disable=C0413
-from src.types import SequenceType  # pylint: disable=C0413
-from src.types.parameters import (  # pylint: disable=C0413
+from src.algorithms.hmm import PairHMM
+from src.algorithms.viterbi import ViterbiAligner
+from src.algorithms.mea import MEAAligner
+from src.types import SequenceType
+from src.types.parameters import (
     EmissionParameters,
     GapParameters,
     HMMParameters,
     TransitionParameters,
 )
-from src.utils.stockholm import read_rna_stockholm  # pylint: disable=C0413
+from src.utils.stockholm import read_rna_stockholm
 
 
 def load_pair_hmm(yaml_path: Path) -> PairHMM:
