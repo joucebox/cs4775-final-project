@@ -7,6 +7,8 @@ from pathlib import Path
 
 import yaml
 
+from constants import ALIGNMENTS_FOLDER, HMM_YAML, PRECISION, PSEUDOCOUNT
+
 # Add the repository root to the Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -16,15 +18,6 @@ from src.utils import collect_alignments, parameters_to_dict  # pylint: disable=
 from src.algorithms.mle_parameters import (  # pylint: disable=C0413
     estimate_params_from_alignments,
 )
-
-PROJECT_ROOT = Path(__file__).parent.parent
-DATA_FOLDER = PROJECT_ROOT / "data"
-FASTA_FOLDER = DATA_FOLDER / "fasta"
-ALIGNMENTS_FOLDER = DATA_FOLDER / "alignments"
-OUTPUT_FOLDER = PROJECT_ROOT / "results" / "parameters"
-HMM_YAML = OUTPUT_FOLDER / "hmm.yaml"
-PRECISION = 6
-PSEUDOCOUNT = 0.5
 
 
 def load_alignments(folder: Path):

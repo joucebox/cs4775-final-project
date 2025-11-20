@@ -3,17 +3,14 @@
 import sys
 from pathlib import Path
 
+from constants import ALIGNMENTS_FOLDER
+
 # Add the repository root to the Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.utils import collect_alignments  # pylint: disable=C0413
-
-PROJECT_ROOT = Path(__file__).parent.parent
-DATA_FOLDER = PROJECT_ROOT / "data"
-FASTA_FOLDER = DATA_FOLDER / "fasta"
-ALIGNMENTS_FOLDER = DATA_FOLDER / "alignments"
 
 
 def print_stockholm_alignments(folder_path):

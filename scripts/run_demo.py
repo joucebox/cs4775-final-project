@@ -10,6 +10,8 @@ from typing import Tuple
 
 import yaml
 
+from constants import ALIGNMENTS_FOLDER, HMM_YAML
+
 # Ensure repository modules are importable when invoked as a script
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -26,11 +28,6 @@ from src.types.parameters import (  # pylint: disable=C0413
     TransitionParameters,
 )
 from src.utils.stockholm import read_rna_stockholm  # pylint: disable=C0413
-
-PROJECT_ROOT = Path(__file__).parent.parent
-ALIGNMENTS_FOLDER = PROJECT_ROOT / "data" / "alignments"
-FASTA_FOLDER = PROJECT_ROOT / "data" / "fasta"
-HMM_YAML = PROJECT_ROOT / "results" / "parameters" / "hmm.yaml"
 
 
 def load_pair_hmm(yaml_path: Path) -> PairHMM:
