@@ -403,7 +403,7 @@ def test_forward_backward_recurrence_validity():
         identifier="y", residues=list("C"), description=None, aligned=True
     )
 
-    F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+    F_M, _, _, _ = compute_forward(hmm, x_seq, y_seq)
 
     # For 1x1, forward should only have values at (0,0) start, (1,0) for X, (0,1) for Y, and (1,1) for M
     # Other cells should be -inf
