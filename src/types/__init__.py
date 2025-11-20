@@ -2,6 +2,7 @@
 
 from .sequence import SequenceType, RNASequence
 from .alignment import Alignment, AlignmentResult
+from .evaluation import MetricResult, EvaluationResult
 
 
 __all__ = [
@@ -9,5 +10,7 @@ __all__ = [
     "RNASequence",
     "Alignment",
     "AlignmentResult",
+    "MetricResult",
+    "EvaluationResult",
     "parameters",
 ]
