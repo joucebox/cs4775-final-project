@@ -250,7 +250,7 @@ class ViterbiAligner(PairwiseAligner):
         )
 
         return Alignment(
-            name=f"Viterbi_{x_seq.identifier}_vs_{y_seq.identifier}",
+            name=None,
             aligned_sequences=[aligned_seq_x, aligned_seq_y],
             original_sequences=[x_seq.denormalize(), y_seq.denormalize()],
         )
