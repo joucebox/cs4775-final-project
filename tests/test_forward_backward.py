@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from src.algorithms.forward_backward import (
     compute_backward,
     compute_forward,
@@ -77,8 +75,12 @@ def test_forward_backward_shapes_and_consistency():
     """Forward/backward matrices should have correct shapes and matching logZ."""
     hmm = _toy_hmm()
     # aligned=True since we’re in alignment / HMM-land (A,C,G,U, -, . allowed)
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("GU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("GU"), description=None, aligned=True
+    )
 
     F_M, F_X, F_Y, logZ_f = compute_forward(hmm, x_seq, y_seq)
     B_M, B_X, B_Y, logZ_b = compute_backward(hmm, x_seq, y_seq)
@@ -129,8 +131,12 @@ def test_forward_backward_single_base_pair_probability():
     We verify that logZ from forward/backward equals log(7/72).
     """
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("A"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("U"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("A"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("U"), description=None, aligned=True
+    )
 
     _, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
     _, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
@@ -154,7 +160,9 @@ def test_forward_backward_single_insertion_x_probability():
           = 1/12
     """
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("A"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("A"), description=None, aligned=True
+    )
     # No residues in y
     y_seq = RNASequence(identifier="y", residues=[], description=None, aligned=True)
 
@@ -225,10 +233,14 @@ def test_logsumexp_numerical_stability():
 def test_forward_computation_nonempty_sequences():
     """Test forward computation produces finite values for valid sequences."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("GU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("GU"), description=None, aligned=True
+    )
 
-    F_M, F_X, F_Y, logZ = compute_forward(hmm, x_seq, y_seq)
+    F_M, _, _, logZ = compute_forward(hmm, x_seq, y_seq)
 
     # Check that final cells are finite
     assert math.isfinite(F_M[2][2])
@@ -239,10 +251,14 @@ def test_forward_computation_nonempty_sequences():
 def test_backward_computation_nonempty_sequences():
     """Test backward computation produces finite values for valid sequences."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("GU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("GU"), description=None, aligned=True
+    )
 
-    B_M, B_X, B_Y, logZ = compute_backward(hmm, x_seq, y_seq)
+    _, _, _, logZ = compute_backward(hmm, x_seq, y_seq)
 
     # Check that starting cells are finite
     assert math.isfinite(logZ)
@@ -262,7 +278,9 @@ def test_forward_backward_single_insertion_y_probability():
     """
     hmm = _toy_hmm()
     x_seq = RNASequence(identifier="x", residues=[], description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("U"), description=None, aligned=True)
+    y_seq = RNASequence(
+        identifier="y", residues=list("U"), description=None, aligned=True
+    )
 
     _, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
     _, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
@@ -277,11 +295,15 @@ def test_forward_backward_single_insertion_y_probability():
 def test_forward_backward_longer_sequences():
     """Test forward/backward on longer sequences."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("ACGU"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("ACGU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("ACGU"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("ACGU"), description=None, aligned=True
+    )
 
-    F_M, F_X, F_Y, logZ_f = compute_forward(hmm, x_seq, y_seq)
-    B_M, B_X, B_Y, logZ_b = compute_backward(hmm, x_seq, y_seq)
+    _, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+    _, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
     # Both should return finite values
     assert math.isfinite(logZ_f)
@@ -293,11 +315,15 @@ def test_forward_backward_longer_sequences():
 def test_forward_backward_asymmetric_lengths():
     """Test forward/backward with sequences of different lengths."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("ACGUA"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("AC"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("ACGUA"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("AC"), description=None, aligned=True
+    )
 
-    F_M, F_X, F_Y, logZ_f = compute_forward(hmm, x_seq, y_seq)
-    B_M, B_X, B_Y, logZ_b = compute_backward(hmm, x_seq, y_seq)
+    F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+    _, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
     # Shape checks
     assert len(F_M) == 6  # n+1
@@ -310,8 +336,12 @@ def test_forward_backward_asymmetric_lengths():
 def test_forward_matrix_all_cells_finite():
     """Test that forward matrix cells are all finite or -inf as expected."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("GU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("GU"), description=None, aligned=True
+    )
 
     F_M, F_X, F_Y, _ = compute_forward(hmm, x_seq, y_seq)
 
@@ -324,8 +354,12 @@ def test_forward_matrix_all_cells_finite():
 def test_backward_matrix_terminal_cells():
     """Test that backward matrix terminal cells are properly initialized."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("AC"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("GU"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("AC"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("GU"), description=None, aligned=True
+    )
 
     B_M, B_X, B_Y, _ = compute_backward(hmm, x_seq, y_seq)
 
@@ -343,11 +377,15 @@ def test_forward_backward_with_custom_start_end_probs():
     custom_end = {"M": math.log(0.6), "X": math.log(0.2), "Y": math.log(0.2)}
     hmm = PairHMM(params, start_log_probs=custom_start, end_log_probs=custom_end)
 
-    x_seq = RNASequence(identifier="x", residues=list("A"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("U"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("A"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("U"), description=None, aligned=True
+    )
 
-    F_M, F_X, F_Y, logZ_f = compute_forward(hmm, x_seq, y_seq)
-    B_M, B_X, B_Y, logZ_b = compute_backward(hmm, x_seq, y_seq)
+    _, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+    _, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
 
     # Should still be consistent
     assert math.isfinite(logZ_f)
@@ -358,11 +396,15 @@ def test_forward_backward_with_custom_start_end_probs():
 def test_forward_backward_recurrence_validity():
     """Test that forward/backward recurrences are correctly applied."""
     hmm = _toy_hmm()
-    x_seq = RNASequence(identifier="x", residues=list("A"), description=None, aligned=True)
-    y_seq = RNASequence(identifier="y", residues=list("C"), description=None, aligned=True)
+    x_seq = RNASequence(
+        identifier="x", residues=list("A"), description=None, aligned=True
+    )
+    y_seq = RNASequence(
+        identifier="y", residues=list("C"), description=None, aligned=True
+    )
 
-    F_M, F_X, F_Y, logZ_f = compute_forward(hmm, x_seq, y_seq)
-    
+    F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
+
     # For 1x1, forward should only have values at (0,0) start, (1,0) for X, (0,1) for Y, and (1,1) for M
     # Other cells should be -inf
     assert F_M[0][0] == float("-inf")
