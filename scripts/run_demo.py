@@ -10,7 +10,7 @@ from typing import Tuple
 
 import yaml
 
-from constants import ALIGNMENTS_FOLDER, HMM_YAML
+from .constants import ALIGNMENTS_FOLDER, HMM_YAML
 
 # Ensure repository modules are importable when invoked as a script
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -79,12 +79,16 @@ def main() -> None:
     if not stockholm_path.exists():
         raise FileNotFoundError(f"Stockholm file not found: {stockholm_path}")
 
-    reference = read_rna_stockholm(str(stockholm_path))
-    if len(reference.original_sequences) != 2:
-        raise ValueError(
-            "Expected a pairwise alignment; found "
-            f"{len(reference.original_sequences)} sequences."
-        )
+    # read_rna_stockholm now returns a list of pairwise alignments
+    alignments = read_rna_stockholm(str(stockholm_path))
+    if not alignments:
+        raise ValueError("No pairwise alignments found in Stockholm file.")
+
+    # Use the first pairwise alignment by default
+    reference = alignments[0]
+
+    print(f"Found {len(alignments)} pairwise alignment(s) in Stockholm file.")
+    print(f"Using alignment: {reference.name}\n")
 
     hmm = load_pair_hmm(HMM_YAML)
     aligner = ViterbiAligner()

@@ -3,6 +3,7 @@
 import io
 import os
 from typing import List
+from itertools import combinations
 
 from skbio import RNA, TabularMSA
 
@@ -49,8 +50,15 @@ def _uppercase_stockholm_sequences(file_path: str) -> io.StringIO:
     return io.StringIO("".join(out_lines))
 
 
-def read_rna_stockholm(file_path: str) -> Alignment:
-    """Read a Stockholm file and return an Alignment."""
+def read_rna_stockholm(file_path: str) -> List[Alignment]:
+    """Read a Stockholm file and return a list of Alignments for all pairs.
+
+    This function:
+    1. Reads all sequences from the corresponding FASTA file
+    2. Generates all pairwise combinations of sequences
+    3. For each pair, creates an Alignment from the Stockholm data
+    4. Returns a list of all pairwise Alignments
+    """
     # Preprocess to uppercase aligned sequence characters to satisfy RNA alphabet
     fh = _uppercase_stockholm_sequences(file_path)
 
@@ -68,29 +76,44 @@ def read_rna_stockholm(file_path: str) -> Alignment:
     allowed_ids = set(fasta_by_id.keys())
 
     # Build aligned sequences from MSA that are present in FASTA
-    aligned_sequences = []
+    aligned_sequences_dict = {}
     for seq in msa:
         identifier = (getattr(seq, "metadata", {}) or {}).get("id") or ""
         if identifier in allowed_ids:
-            aligned_sequences.append(rna_sequence_from_skbio(seq, aligned=True))
+            aligned_sequences_dict[identifier] = rna_sequence_from_skbio(
+                seq, aligned=True
+            )
 
-    # Original (unaligned) sequences filtered to the same identifiers
-    original_sequences = [
-        fasta_by_id[s.identifier]
-        for s in aligned_sequences
-        if s.identifier in fasta_by_id
-    ]
+    # Get list of identifiers for creating pairs
+    identifiers = list(aligned_sequences_dict.keys())
 
-    if len(aligned_sequences) != len(original_sequences) or len(aligned_sequences) != 2:
-        raise ValueError(f"Expected 2 aligned sequences, got {len(aligned_sequences)}")
+    if len(identifiers) < 2:
+        raise ValueError(f"Expected at least 2 sequences, got {len(identifiers)}")
 
-    return _clean_alignment(
-        Alignment(
-            name=os.path.basename(file_path),
-            aligned_sequences=aligned_sequences,
-            original_sequences=original_sequences,
+    # Generate all pairwise combinations
+    pairs = list(combinations(identifiers, 2))
+
+    # Create an Alignment for each pair
+    alignments = []
+    for i, (id1, id2) in enumerate(pairs):
+        pair_aligned_sequences = [
+            aligned_sequences_dict[id1],
+            aligned_sequences_dict[id2],
+        ]
+        pair_original_sequences = [fasta_by_id[id1], fasta_by_id[id2]]
+
+        alignment_name = f"{os.path.basename(file_path)}_{i}"
+        alignments.append(
+            _clean_alignment(
+                Alignment(
+                    name=alignment_name,
+                    aligned_sequences=pair_aligned_sequences,
+                    original_sequences=pair_original_sequences,
+                )
+            )
         )
-    )
+
+    return alignments
 
 
 def _clean_alignment(alignment: Alignment) -> Alignment:
@@ -134,11 +157,19 @@ def _clean_alignment(alignment: Alignment) -> Alignment:
 
 
 def collect_alignments(folder_path: str) -> List[Alignment]:
-    """Collect all alignments from the given folder."""
+    """Collect all alignments from the given folder.
+
+    Since each Stockholm file now generates multiple pairwise alignments,
+    this returns a flattened list of all pairwise alignments from all files.
+    """
     alignments = []
     for file_path in os.listdir(folder_path):
         if file_path.lower().endswith(".sto"):
-            alignments.append(read_rna_stockholm(os.path.join(folder_path, file_path)))
+            # read_rna_stockholm now returns a list of alignments
+            pairwise_alignments = read_rna_stockholm(
+                os.path.join(folder_path, file_path)
+            )
+            alignments.extend(pairwise_alignments)
     return alignments
 
 
