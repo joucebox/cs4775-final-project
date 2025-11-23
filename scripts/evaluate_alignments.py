@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
@@ -11,7 +10,7 @@ from typing import Dict, Iterable, List, Sequence
 import pandas as pd
 import yaml
 
-from .constants import ALIGNMENTS_FOLDER, CSV_PATH, HMM_YAML
+from .constants import ALIGNMENTS_FOLDER, CSV_FOLDER, HMM_YAML, GAMMA_VALUES
 
 # Ensure repository modules are importable when invoked as a script
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -84,41 +83,18 @@ def _run_aligner(
     return predictions
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Evaluate MEA and Viterbi aligners against gold alignments."
-    )
-    parser.add_argument(
-        "--gamma",
-        type=float,
-        default=1.0,
-        help="Gamma value for the MEA aligner (ignored if MEA not selected).",
-    )
-    return parser.parse_args()
+def evaluate_gamma(
+    gamma: float,
+    references: List[Alignment],
+    viterbi_predictions: List[Alignment],
+    hmm: PairHMM,
+) -> None:
+    """Evaluate the MEA and Viterbi aligners against the gold alignments for a given gamma value."""
 
-
-def main() -> None:
-    """Main function to evaluate MEA and Viterbi aligners against gold alignments."""
-    args = parse_args()
-
-    alignments_dir = ALIGNMENTS_FOLDER
-
-    if not alignments_dir.exists():
-        raise FileNotFoundError(f"Alignment directory not found: {alignments_dir}")
-    if not HMM_YAML.exists():
-        raise FileNotFoundError(f"HMM parameter file not found: {HMM_YAML}")
-
-    references = _sorted_alignments(collect_alignments(str(alignments_dir)))
-    hmm = load_pair_hmm(HMM_YAML)
-
-    aligner_instances = {
-        "viterbi": ViterbiAligner(),
-        "mea": MEAAligner(gamma=args.gamma),
-    }
-    aligner_predictions: Dict[str, List[Alignment]] = {
-        name: _run_aligner(instance, hmm, references)
-        for name, instance in aligner_instances.items()
+    mea_predictions = _run_aligner(MEAAligner(gamma=gamma), hmm, references)
+    aligner_predictions = {
+        "viterbi": viterbi_predictions,
+        "mea": mea_predictions,
     }
 
     all_results: Dict[str, Dict[str, EvaluationResult]] = {}
@@ -128,7 +104,6 @@ def main() -> None:
         results = evaluate_all_metrics(predictions, references)
         all_results[aligner_label] = results
 
-        per_alignment_rows: Dict[str, Dict[str, float]] = {}
         for metric_name, evaluation in results.items():
             aggregate_rows.append(
                 {
@@ -143,38 +118,6 @@ def main() -> None:
                     "Count": evaluation.count,
                 }
             )
-            for metric_result in evaluation.per_alignment:
-                alignment_identifier = (
-                    metric_result.alignment_name
-                    or f"{metric_result.sequence_ids[0]}_{metric_result.sequence_ids[1]}"
-                )
-                row = per_alignment_rows.setdefault(
-                    alignment_identifier,
-                    {
-                        "sequences": "/".join(metric_result.sequence_ids),
-                    },
-                )
-                row[metric_name] = metric_result.value
-
-        per_alignment_df = (
-            pd.DataFrame.from_dict(per_alignment_rows, orient="index")
-            .rename_axis("Alignment")
-            .reset_index()
-            .rename(columns={"sequences": "Sequences"})
-        )
-        ordered_columns = ["Alignment", "Sequences", *results.keys()]
-        per_alignment_df = per_alignment_df.reindex(columns=ordered_columns)
-
-        print(f"\nPer-alignment metrics for {aligner_label}:")
-        if per_alignment_df.empty:
-            print("No alignments evaluated.")
-        else:
-            per_alignment_df.drop(columns=["Sequences"], inplace=True)
-            print(
-                per_alignment_df.sort_values("Alignment").to_string(
-                    index=False, float_format=lambda x: f"{x:.4f}"
-                )
-            )
 
     aggregate_df = pd.DataFrame(aggregate_rows).drop_duplicates()
     if not aggregate_df.empty:
@@ -184,9 +127,28 @@ def main() -> None:
         print("\nAggregate metrics:")
         print(aggregate_df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
 
-    CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    aggregate_df.to_csv(CSV_PATH, index=False)
-    print(f"\nWrote aggregate metrics to {CSV_PATH}")
+    csv_path = CSV_FOLDER / f"gamma_{gamma}.csv"
+    aggregate_df.to_csv(csv_path, index=False)
+    print(f"\nWrote gamma={gamma} aggregate metrics to {csv_path}")
+
+
+def main() -> None:
+    """Main function to evaluate MEA and Viterbi aligners against gold alignments."""
+
+    CSV_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    if not ALIGNMENTS_FOLDER.exists():
+        raise FileNotFoundError(f"Alignment directory not found: {ALIGNMENTS_FOLDER}")
+    if not HMM_YAML.exists():
+        raise FileNotFoundError(f"HMM parameter file not found: {HMM_YAML}")
+
+    references = _sorted_alignments(collect_alignments(str(ALIGNMENTS_FOLDER)))
+    hmm = load_pair_hmm(HMM_YAML)
+
+    viterbi_predictions = _run_aligner(ViterbiAligner(), hmm, references)
+
+    for gamma in GAMMA_VALUES:
+        evaluate_gamma(gamma, references, viterbi_predictions, hmm)
 
 
 if __name__ == "__main__":
