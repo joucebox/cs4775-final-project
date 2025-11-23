@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 import sys
 import math
@@ -26,10 +25,8 @@ from src.types.parameters import (
 )
 import yaml
 import io
-try:
-    from PIL import Image
-except Exception:
-    Image = None
+from PIL import Image
+
 from scripts.constants import ALIGNMENTS_FOLDER, HMM_YAML
 
 
@@ -66,7 +63,9 @@ def build_posteriors(hmm: PairHMM, x_seq, y_seq) -> np.ndarray:
 
     if math.isfinite(logZ_f) and math.isfinite(logZ_b):
         if abs(logZ_f - logZ_b) > 1e-5:
-            raise ValueError(f"Forward and backward log-normalizers disagree: {logZ_f} vs {logZ_b}")
+            raise ValueError(
+                f"Forward and backward log-normalizers disagree: {logZ_f} vs {logZ_b}"
+            )
         logZ = 0.5 * (logZ_f + logZ_b)
     else:
         raise ValueError("Forward/backward log-normalizers are not finite")
@@ -103,7 +102,14 @@ def aligned_pairs_from_alignment(a1, a2):
     return pairs
 
 
-def plot_posterior_heatmap(post_M: np.ndarray, ref_pairs: set, out_path: Path, gamma: float | None = None, dpi: int = 96, fmt: str = "png"):
+def plot_posterior_heatmap(
+    post_M: np.ndarray,
+    ref_pairs: set,
+    out_path: Path,
+    gamma: float | None = None,
+    dpi: int = 96,
+    fmt: str = "png",
+):
     arr = post_M.copy()
     arr = arr[1:, 1:]
     if gamma is not None:
@@ -183,7 +189,14 @@ def resample_to_grid(arr: np.ndarray, target_shape: tuple[int, int]) -> np.ndarr
     return out
 
 
-def plot_aggregated_heatmaps(grids: list[np.ndarray], ref_counts: np.ndarray, out_path: Path, gamma: float | None = None, dpi: int = 96, fmt: str = "png"):
+def plot_aggregated_heatmaps(
+    grids: list[np.ndarray],
+    ref_counts: np.ndarray,
+    out_path: Path,
+    gamma: float | None = None,
+    dpi: int = 96,
+    fmt: str = "png",
+):
     """Plot mean and max aggregated grids side-by-side. `grids` is list of resampled arrays (same shape)."""
     if not grids:
         return
@@ -229,21 +242,20 @@ def plot_aggregated_heatmaps(grids: list[np.ndarray], ref_counts: np.ndarray, ou
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Plot posterior heatmaps for pairwise alignments.")
-    parser.add_argument("--alignments-dir", type=str, default=str(ALIGNMENTS_FOLDER))
-    parser.add_argument("--hmm-yaml", type=str, default=str(HMM_YAML))
-    parser.add_argument("--out-dir", type=str, default=str(REPO_ROOT / "results" / "posteriors"))
-    parser.add_argument("--gamma", type=float, default=None, help="Optional gamma exponent to apply for visualization")
-    parser.add_argument("--max", type=int, default=0, help="Max number of images to produce (0 = all)")
-    parser.add_argument("--per-pair", action="store_true", help="Produce one heatmap per pair (original behavior). Default is aggregated per-file mean+max.")
-    parser.add_argument("--grid-size", type=int, default=64, help="Resampling grid size for aggregated heatmaps (default: 64)")
-    parser.add_argument("--dpi", type=int, default=96, help="DPI for saved images (lower reduces file size). Default: 96")
-    parser.add_argument("--format", type=str, default="png", choices=("png", "jpg"), help="Output image format (png or jpg). JPG produces smaller files by lossy compression.")
-    args = parser.parse_args()
+    # Use defaults instead of argparse arguments
+    align_dir = ALIGNMENTS_FOLDER
+    hmm_yaml = HMM_YAML
+    out_dir = REPO_ROOT / "results" / "posteriors"
+    gamma = None
+    max_count = 0
+    per_pair = False
+    grid_size = 48
+    dpi = 192
+    fmt = "png"
 
-    align_dir = Path(args.alignments_dir)
-    hmm_yaml = Path(args.hmm_yaml)
-    out_dir = Path(args.out_dir)
+    align_dir = Path(align_dir)
+    hmm_yaml = Path(hmm_yaml)
+    out_dir = Path(out_dir)
 
     if not hmm_yaml.exists():
         raise FileNotFoundError(f"HMM yaml not found: {hmm_yaml}")
@@ -265,10 +277,10 @@ def main() -> None:
                 # If restoration fails, continue but warn
                 print(f"Warning: failed to restore original Stockholm file: {sto_path}")
 
-        if not args.per_pair:
+        if not per_pair:
             grids = []
             ref_count_grid = None
-            tshape = (args.grid_size, args.grid_size)
+            tshape = (grid_size, grid_size)
             for idx, ref in enumerate(pairwise):
                 seq_x, seq_y = ref.original_sequences
                 post = build_posteriors(pair_hmm, seq_x, seq_y)
@@ -278,11 +290,13 @@ def main() -> None:
 
                 if ref_count_grid is None:
                     ref_count_grid = np.zeros(tshape, dtype=float)
-                ref_pairs = aligned_pairs_from_alignment(ref.aligned_sequences[0], ref.aligned_sequences[1])
+                ref_pairs = aligned_pairs_from_alignment(
+                    ref.aligned_sequences[0], ref.aligned_sequences[1]
+                )
                 n = arr.shape[0]
                 m = arr.shape[1]
                 if n > 0 and m > 0:
-                    for (i, j) in ref_pairs:
+                    for i, j in ref_pairs:
                         gx = int(round(i / max(1, n - 1) * (tshape[0] - 1)))
                         gy = int(round(j / max(1, m - 1) * (tshape[1] - 1)))
                         ref_count_grid[gx, gy] += 1
@@ -290,23 +304,29 @@ def main() -> None:
             if grids:
                 out_name = f"{sto_path.stem}_aggregated.png"
                 out_path = out_dir / out_name
-                plot_aggregated_heatmaps(grids, ref_count_grid, out_path, gamma=args.gamma, dpi=args.dpi, fmt=args.format)
+                plot_aggregated_heatmaps(
+                    grids, ref_count_grid, out_path, gamma=gamma, dpi=dpi, fmt=fmt
+                )
                 count += 1
-                if args.max > 0 and count >= args.max:
+                if max_count > 0 and count >= max_count:
                     print(f"Produced {count} aggregated heatmaps (limit reached).")
                     return
         else:
             for idx, ref in enumerate(pairwise):
                 seq_x, seq_y = ref.original_sequences
                 post = build_posteriors(pair_hmm, seq_x, seq_y)
-                ref_pairs = aligned_pairs_from_alignment(ref.aligned_sequences[0], ref.aligned_sequences[1])
+                ref_pairs = aligned_pairs_from_alignment(
+                    ref.aligned_sequences[0], ref.aligned_sequences[1]
+                )
 
                 out_name = f"{sto_path.stem}_{idx}.png"
                 out_path = out_dir / out_name
-                plot_posterior_heatmap(post, ref_pairs, out_path, gamma=args.gamma, dpi=args.dpi, fmt=args.format)
+                plot_posterior_heatmap(
+                    post, ref_pairs, out_path, gamma=gamma, dpi=dpi, fmt=fmt
+                )
 
                 count += 1
-                if args.max > 0 and count >= args.max:
+                if max_count > 0 and count >= max_count:
                     print(f"Produced {count} heatmaps (limit reached).")
                     return
 
