@@ -13,13 +13,13 @@ CSV_FOLDER = PROJECT_ROOT / "results" / "metrics"
 
 PRECISION = 6
 PSEUDOCOUNT = 0.5
-GAMMA_VALUES = [0.01, 0.1, 0.25, 0.5, 1.0]
+GAMMA_VALUES = [0.01, 0.1, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
 
 # Rfam download configuration
 FULL_ALIGN_BASE_URL = (
     "https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/full_alignments/"
 )
-DEFAULT_NUM_FAMILIES = 10
+DEFAULT_NUM_FAMILIES = 25
 MAX_PAIRS_PER_FAMILY = 5
 MAX_SEQUENCES_PER_FAMILY = 25
 RANDOM_SEED = 42
