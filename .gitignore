@@ -3,3 +3,4 @@ __tmp__/
 .pytest_cache/
 .vscode/
 data/all_sequences.fa
+.DS_Store
