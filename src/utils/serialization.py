@@ -1,11 +1,20 @@
-"""Serialization utilities for exporting HMM parameters."""
+"""Serialization utilities for HMM parameters (load and save)."""
 
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import Any, Dict
 
-from src.types.parameters import HMMParameters
+import yaml
+
+from src.algorithms.hmm import PairHMM
+from src.types.parameters import (
+    EmissionParameters,
+    GapParameters,
+    HMMParameters,
+    TransitionParameters,
+)
 
 
 def _convert_values(value: Any, precision: int | None) -> Any:
@@ -32,4 +41,26 @@ def parameters_to_dict(
     return _convert_values(params, float_precision)
 
 
-__all__ = ["parameters_to_dict"]
+def load_pair_hmm(yaml_path: Path) -> PairHMM:
+    """Load PairHMM parameters from a YAML file."""
+    with yaml_path.open("r", encoding="utf-8") as handle:
+        payload = yaml.safe_load(handle)
+
+    params_dict = payload.get("parameters", payload)
+    emissions_dict = params_dict["log_emissions"]
+    transitions_dict = params_dict["log_transitions"]["matrix"]
+    gaps_dict = params_dict["gaps"]
+
+    params = HMMParameters(
+        log_emissions=EmissionParameters(
+            match=emissions_dict["match"],
+            insert_x=emissions_dict["insert_x"],
+            insert_y=emissions_dict["insert_y"],
+        ),
+        log_transitions=TransitionParameters(matrix=transitions_dict),
+        gaps=GapParameters(**gaps_dict),
+    )
+    return PairHMM(params)
+
+
+__all__ = ["parameters_to_dict", "load_pair_hmm"]
