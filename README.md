@@ -4,7 +4,7 @@ CS4775 Final Project: A Maximum Expected Accuracy Approach to Pairwise Alignment
 
 ## Overview
 
-This project implements a pair Hidden Markov Model (HMM) for RNA sequence alignment using maximum likelihood estimation (MLE) from multiple sequence alignments. The implementation includes parameter estimation, forward-backward algorithms, and utilities for working with FASTA and Stockholm alignment formats.
+This project implements a pair Hidden Markov Model (HMM) for RNA sequence alignment using maximum likelihood estimation (MLE) from multiple sequence alignments. The implementation compares Maximum Expected Accuracy (MEA) alignment against Viterbi alignment across different gamma values. It includes parameter estimation, forward-backward algorithms, evaluation metrics, and utilities for working with FASTA and Stockholm alignment formats.
 
 ## Setup
 
@@ -36,14 +36,6 @@ This project implements a pair Hidden Markov Model (HMM) for RNA sequence alignm
 
    This will create a virtual environment and install all required packages.
 
-4. **Activate the virtual environment**:
-
-   ```bash
-   poetry shell
-   ```
-
-   Alternatively, prefix commands with `poetry run` to run them in the virtual environment without activating it.
-
 ## Project Structure
 
 ```
@@ -52,9 +44,13 @@ cs4775-final-project/
 │   ├── alignments/     # Stockholm alignment files (.sto)
 │   └── fasta/          # FASTA sequence files (.fa)
 ├── results/
-│   └── parameters/     # Output HMM parameters (YAML)
+│   ├── parameters/     # Output HMM parameters (YAML)
+│   ├── metrics/        # Evaluation metrics CSVs by gamma value
+│   ├── figures/        # Generated plots (F1, precision, recall vs gamma)
+│   └── posteriors/     # Posterior probability heatmaps
 ├── src/
-│   ├── algorithms/     # HMM and forward-backward algorithms
+│   ├── algorithms/     # HMM, MEA, Viterbi, and forward-backward algorithms
+│   ├── evaluation/     # Evaluation metrics (precision, recall, F1, etc.)
 │   ├── types/          # Data structures (sequences, alignments, parameters)
 │   └── utils/          # File I/O and serialization utilities
 ├── scripts/            # Executable scripts
@@ -67,30 +63,27 @@ cs4775-final-project/
 
 All scripts should be run as modules using `python -m` to ensure proper import paths:
 
-#### 1. Read FASTA and Stockholm Files
+#### 1. Read Stockholm Alignments
 
-Preview sequences and alignments from the data directory:
+Preview alignments from the data directory:
 
 ```bash
-python -m scripts.read
+poetry run python -m scripts.read
 ```
 
-This will display:
-
-- All Stockholm alignments in `data/alignments/`
+This will display all Stockholm alignments in `data/alignments/`.
 
 #### 2. Estimate HMM Parameters
 
 Estimate HMM parameters from Stockholm alignments using maximum likelihood estimation with pseudocount smoothing:
 
 ```bash
-python -m scripts.estimate_parameters
+poetry run python -m scripts.estimate_parameters
 ```
 
 This will:
 
 - Read all `.sto` files from `data/alignments/`
-- Match them with corresponding `.fa` files in `data/fasta/`
 - Estimate emission and transition probabilities (in log-space)
 - Apply additive smoothing (pseudocount = 0.5)
 - Save parameters to `results/parameters/hmm.yaml`
@@ -101,6 +94,75 @@ The output YAML file contains:
 - Log-space emission probabilities (match, insert_x, insert_y)
 - Log-space transition probabilities
 - Gap parameters (delta, epsilon)
+
+#### 3. Evaluate Alignments
+
+Evaluate MEA and Viterbi aligners against gold standard alignments for various gamma values:
+
+```bash
+poetry run python -m scripts.evaluate_alignments
+```
+
+This will:
+
+- Load reference alignments from `data/alignments/`
+- Run both MEA (with varying gamma) and Viterbi aligners
+- Compute precision, recall, F1, and column identity metrics
+- Save results to `results/metrics/gamma_*.csv`
+
+#### 4. Plot Metrics
+
+Generate plots from the evaluation metrics:
+
+```bash
+poetry run python -m scripts.plot_metrics
+```
+
+This will generate plots in `results/figures/`:
+
+- `f1_precision_recall_vs_gamma.png` - Precision, recall, and F1 vs gamma
+- `delta_f1_vs_gamma.png` - MEA vs Viterbi F1 difference
+- `column_identity_vs_gamma.png` - Column identity comparison
+
+#### 5. Plot Posteriors
+
+Generate posterior match-probability heatmaps:
+
+```bash
+poetry run python -m scripts.plot_posteriors --per-pair --compare
+```
+
+Options include:
+
+- `--per-pair` - Generate individual heatmaps for each alignment
+- `--compare` - Side-by-side MEA vs Viterbi comparison
+- `--overlay` - Overlay both alignments on the same chart
+- `--zoom-diff` - Generate zoomed panels highlighting disagreements
+- `--gamma <value>` - Specify gamma value for MEA weighting
+
+#### 6. Run Demo
+
+Run a demo alignment on a single Stockholm file:
+
+```bash
+poetry run python -m scripts.run_demo -s RF00058_0
+```
+
+This displays the reference alignment alongside Viterbi and MEA predictions with their scores.
+
+#### 7. Download Additional Data (Optional)
+
+> **Note:** This script is optional. All alignment data generated by the authors is already included in the repository. Only run this if you want to generate additional pairwise alignments from Rfam.
+
+```bash
+poetry run python -m scripts.download_rfam_pairs
+```
+
+This will:
+
+- Fetch alignment families from the Rfam database
+- Generate pairwise `.sto` and `.fa` files
+- Requires `data/all_sequences.fa` (not included in repository, see below)
 
 ## Running Tests
 
@@ -120,7 +182,8 @@ pytest -v
 
 ```bash
 pytest tests/test_hmm.py
-pytest tests/test_forward_backward_skeleton.py
+pytest tests/test_forward_backward.py
+pytest tests/test_mea.py
 ```
 
 ### Run Tests with Coverage
@@ -141,17 +204,25 @@ black src/ tests/ scripts/
 
 ## Data Files
 
-### Input Format
+### Included in Repository
 
 - **FASTA files** (`.fa`): Unaligned RNA sequences
 
   - Located in `data/fasta/`
   - Format: standard FASTA with `>identifier description` headers
 
-- **Stockholm files** (`.sto`): Multiple sequence alignments
+- **Stockholm files** (`.sto`): Pairwise sequence alignments
+
   - Located in `data/alignments/`
   - Format: Stockholm 1.0 with metadata annotations
-  - Must have matching FASTA file with same basename
+
+- **Pre-computed results**: HMM parameters, evaluation metrics, and figures are all included
+
+### Not Included (Git-ignored)
+
+- `data/all_sequences.fa`: Large Rfam sequence file
+  - Only needed if running `download_rfam_pairs.py` to generate new alignments
+  - Not required for the standard pipeline since all alignment data is included
 
 ## Authors
 
