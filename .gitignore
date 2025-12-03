@@ -4,3 +4,4 @@ __tmp__/
 .vscode/
 data/all_sequences.fa
 .DS_Store
+.cache/
