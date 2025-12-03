@@ -8,8 +8,6 @@ import sys
 from pathlib import Path
 from typing import Tuple
 
-import yaml
-
 from .constants import ALIGNMENTS_FOLDER, HMM_YAML
 
 # Ensure repository modules are importable when invoked as a script
@@ -17,39 +15,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.algorithms.hmm import PairHMM
 from src.algorithms.viterbi import ViterbiAligner
 from src.algorithms.mea import MEAAligner
 from src.types import SequenceType
-from src.types.parameters import (
-    EmissionParameters,
-    GapParameters,
-    HMMParameters,
-    TransitionParameters,
-)
 from src.utils.stockholm import read_rna_stockholm
-
-
-def load_pair_hmm(yaml_path: Path) -> PairHMM:
-    """Load PairHMM parameters from the provided YAML file."""
-    with yaml_path.open("r", encoding="utf-8") as handle:
-        payload = yaml.safe_load(handle)
-
-    params_dict = payload.get("parameters", payload)
-    emissions_dict = params_dict["log_emissions"]
-    transitions_dict = params_dict["log_transitions"]["matrix"]
-    gaps_dict = params_dict["gaps"]
-
-    params = HMMParameters(
-        log_emissions=EmissionParameters(
-            match=emissions_dict["match"],
-            insert_x=emissions_dict["insert_x"],
-            insert_y=emissions_dict["insert_y"],
-        ),
-        log_transitions=TransitionParameters(matrix=transitions_dict),
-        gaps=GapParameters(**gaps_dict),
-    )
-    return PairHMM(params)
+from src.utils import load_pair_hmm
 
 
 def format_alignment(seqs: Tuple[SequenceType, SequenceType]) -> str:

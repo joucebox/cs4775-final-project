@@ -3,106 +3,33 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import sys
+import argparse
+import io
 import math
+import sys
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Rectangle
+from PIL import Image
 
 # Ensure repo importability
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.utils import load_pair_hmm, PosteriorCache
+from src.utils.posterior_analysis import extract_alignment_pairs
 from src.utils.stockholm import read_rna_stockholm
-from src.algorithms.hmm import PairHMM
-from src.algorithms.forward_backward import compute_forward, compute_backward
-from src.types.parameters import (
-    EmissionParameters,
-    GapParameters,
-    HMMParameters,
-    TransitionParameters,
+
+from scripts.constants import (
+    ALIGNMENTS_FOLDER,
+    CACHE_FOLDER,
+    HMM_YAML,
+    POSTERIORS_FOLDER,
 )
-import yaml
-import io
-from PIL import Image
-from src.algorithms.viterbi import ViterbiAligner
-from src.algorithms.mea import MEAAligner
-import argparse
-
-from scripts.constants import ALIGNMENTS_FOLDER, HMM_YAML
-
-
-def load_pair_hmm(yaml_path: Path) -> PairHMM:
-    with yaml_path.open("r", encoding="utf-8") as handle:
-        payload = yaml.safe_load(handle)
-
-    params_dict = payload.get("parameters", payload)
-    emissions_dict = params_dict["log_emissions"]
-    transitions_dict = params_dict["log_transitions"]["matrix"]
-    gaps_dict = params_dict["gaps"]
-
-    params = HMMParameters(
-        log_emissions=EmissionParameters(
-            match=emissions_dict["match"],
-            insert_x=emissions_dict["insert_x"],
-            insert_y=emissions_dict["insert_y"],
-        ),
-        log_transitions=TransitionParameters(matrix=transitions_dict),
-        gaps=GapParameters(**gaps_dict),
-    )
-    return PairHMM(params)
-
-
-def build_posteriors(hmm: PairHMM, x_seq, y_seq) -> np.ndarray:
-    """Compute posterior match matrix as in MEA._compute_match_posteriors."""
-    if getattr(x_seq, "normalized", False) is False:
-        x_seq = x_seq.normalize()
-    if getattr(y_seq, "normalized", False) is False:
-        y_seq = y_seq.normalize()
-
-    F_M, _, _, logZ_f = compute_forward(hmm, x_seq, y_seq)
-    B_M, _, _, logZ_b = compute_backward(hmm, x_seq, y_seq)
-
-    if math.isfinite(logZ_f) and math.isfinite(logZ_b):
-        if abs(logZ_f - logZ_b) > 1e-5:
-            raise ValueError(
-                f"Forward and backward log-normalizers disagree: {logZ_f} vs {logZ_b}"
-            )
-        logZ = 0.5 * (logZ_f + logZ_b)
-    else:
-        raise ValueError("Forward/backward log-normalizers are not finite")
-
-    n = len(x_seq)
-    m = len(y_seq)
-    post_M = np.zeros((n + 1, m + 1), dtype=float)
-
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            joint_log = F_M[i][j] + B_M[i][j]
-            if joint_log == float("-inf"):
-                post_M[i, j] = 0.0
-            else:
-                post_M[i, j] = math.exp(joint_log - logZ)
-
-    return post_M
-
-
-def aligned_pairs_from_alignment(a1, a2):
-    """Return set of 0-based aligned residue index pairs from two aligned sequences."""
-    pairs = set()
-    cur_i = 0
-    cur_j = 0
-    for c1, c2 in zip(a1.residues, a2.residues):
-        is_res1 = c1 != "-"
-        is_res2 = c2 != "-"
-        if is_res1 and is_res2:
-            pairs.add((cur_i, cur_j))
-        if is_res1:
-            cur_i += 1
-        if is_res2:
-            cur_j += 1
-    return pairs
 
 
 def plot_posterior_heatmap(
@@ -206,7 +133,9 @@ def plot_overlay(
     plt.close()
 
 
-def compute_pair_metrics(post_M: np.ndarray, mea_pairs: set, viterbi_pairs: set, ref_pairs: set | None = None):
+def compute_pair_metrics(
+    post_M: np.ndarray, mea_pairs: set, viterbi_pairs: set, ref_pairs: set | None = None
+):
     """Compute overlap, Jaccard, mean-posteriors, and posterior-mass metrics for a single pair.
 
     Returns dict with values useful for reporting.
@@ -237,11 +166,31 @@ def compute_pair_metrics(post_M: np.ndarray, mea_pairs: set, viterbi_pairs: set,
 
     mean_post_mea = mean(mea_vals) if mea_vals else float("nan")
     mean_post_vit = mean(vit_vals) if vit_vals else float("nan")
-    delta_mean = mean_post_mea - mean_post_vit if (not math.isnan(mean_post_mea) and not math.isnan(mean_post_vit)) else float("nan")
+    delta_mean = (
+        mean_post_mea - mean_post_vit
+        if (not math.isnan(mean_post_mea) and not math.isnan(mean_post_vit))
+        else float("nan")
+    )
 
     total_mass = float(np.sum(post_M[1:, 1:]))
-    mass_mea = float(np.sum([post_M[i + 1, j + 1] for i, j in mea_pairs if 0 <= i < post_M.shape[0] - 1 and 0 <= j < post_M.shape[1] - 1]))
-    mass_vit = float(np.sum([post_M[i + 1, j + 1] for i, j in viterbi_pairs if 0 <= i < post_M.shape[0] - 1 and 0 <= j < post_M.shape[1] - 1]))
+    mass_mea = float(
+        np.sum(
+            [
+                post_M[i + 1, j + 1]
+                for i, j in mea_pairs
+                if 0 <= i < post_M.shape[0] - 1 and 0 <= j < post_M.shape[1] - 1
+            ]
+        )
+    )
+    mass_vit = float(
+        np.sum(
+            [
+                post_M[i + 1, j + 1]
+                for i, j in viterbi_pairs
+                if 0 <= i < post_M.shape[0] - 1 and 0 <= j < post_M.shape[1] - 1
+            ]
+        )
+    )
     frac_mass_mea = mass_mea / total_mass if total_mass > 0 else float("nan")
     frac_mass_vit = mass_vit / total_mass if total_mass > 0 else float("nan")
 
@@ -262,11 +211,16 @@ def compute_pair_metrics(post_M: np.ndarray, mea_pairs: set, viterbi_pairs: set,
     }
 
     if ref_pairs is not None:
+
         def _score(pred):
             tp = len(pred & ref_pairs)
             prec = tp / len(pred) if len(pred) > 0 else float("nan")
             rec = tp / len(ref_pairs) if len(ref_pairs) > 0 else float("nan")
-            f1 = 2 * prec * rec / (prec + rec) if (not math.isnan(prec) and not math.isnan(rec)) and (prec + rec) > 0 else float("nan")
+            f1 = (
+                2 * prec * rec / (prec + rec)
+                if (not math.isnan(prec) and not math.isnan(rec)) and (prec + rec) > 0
+                else float("nan")
+            )
             return {"tp": tp, "precision": prec, "recall": rec, "f1": f1}
 
         out["mea_vs_ref"] = _score(mea_pairs)
@@ -298,65 +252,68 @@ def plot_diff_and_zoom(
 
     n, m = arr.shape
 
-    # Build indicator masks
-    mea_mask = np.zeros_like(arr, dtype=float)
-    vit_mask = np.zeros_like(arr, dtype=float)
-    for i, j in mea_pairs:
+    # Find MEA-only positions (MEA picked, Viterbi did not) and score by posterior
+    mea_only = mea_pairs - viterbi_pairs
+    scored_candidates = []
+    for i, j in mea_only:
         if 0 <= i < n and 0 <= j < m:
-            mea_mask[i, j] = 1.0
-    for i, j in viterbi_pairs:
-        if 0 <= i < n and 0 <= j < m:
-            vit_mask[i, j] = 1.0
+            scored_candidates.append((arr[i, j], i, j))
+    # Sort descending by posterior value (favor MEA the most)
+    scored_candidates.sort(reverse=True)
 
-    # Score MEA-only locations by posterior (prefer locations MEA picked and Viterbi did not)
-    score_map = arr * (mea_mask - vit_mask)
-    flat = score_map.flatten()
+    hs = window_size // 2
+    max_overlap = (window_size * window_size) // 2  # allow up to half region overlap
 
-    # Select positive-scoring centers first (MEA > VIT), fallback to top absolute scores
-    idx_pos = np.argsort(flat)[::-1]
+    def compute_overlap_area(ci1, cj1, ci2, cj2):
+        """Compute overlap area between two windows centered at given coordinates."""
+        # Window 1 bounds (clipped to array)
+        i0_1, i1_1 = max(0, ci1 - hs), min(n, ci1 + hs)
+        j0_1, j1_1 = max(0, cj1 - hs), min(m, cj1 + hs)
+        # Window 2 bounds (clipped to array)
+        i0_2, i1_2 = max(0, ci2 - hs), min(n, ci2 + hs)
+        j0_2, j1_2 = max(0, cj2 - hs), min(m, cj2 + hs)
+        # Intersection
+        overlap_i = max(0, min(i1_1, i1_2) - max(i0_1, i0_2))
+        overlap_j = max(0, min(j1_1, j1_2) - max(j0_1, j0_2))
+        return overlap_i * overlap_j
+
+    def has_acceptable_overlap(ci, cj, centers):
+        """Check if candidate has acceptable overlap with all existing centers."""
+        for cx, cy in centers:
+            if compute_overlap_area(ci, cj, cx, cy) >= max_overlap:
+                return False
+        return True
+
+    # Greedily select centers: highest posterior first, allow if acceptable overlap
     centers = []
-    for idx in idx_pos:
+    for _, ci, cj in scored_candidates:
         if len(centers) >= zoom_windows:
             break
-        val = flat[idx]
-        if val <= 0:
-            break
-        ci = int(idx // m)
-        cj = int(idx % m)
-        centers.append((ci, cj))
-
-    if not centers:
-        # fallback: top absolute disagreements (could favor Viterbi in some cases)
-        idx_abs = np.argsort(np.abs(flat))[::-1]
-        for idx in idx_abs[:zoom_windows]:
-            ci = int(idx // m)
-            cj = int(idx % m)
+        if has_acceptable_overlap(ci, cj, centers):
             centers.append((ci, cj))
 
-    # Limit number of zooms to available space
-    max_zooms = max(1, min(len(centers), zoom_windows))
-    centers = centers[:max_zooms]
+    # If no MEA-only centers found, skip zoom panels entirely
+    num_zooms = len(centers)
 
-    # If no centers identified (very short sequences), center on middle
-    if not centers:
-        centers = [(n // 2, m // 2)]
-        max_zooms = 1
+    # Layout: if no zooms, just show overlay; otherwise overlay + zoom panels
+    if num_zooms == 0:
+        fig, ax_overlay = plt.subplots(1, 1, figsize=(8, 6))
+        zoom_axes = []
+    else:
+        fig = plt.figure(figsize=(12, 3 * num_zooms))
+        gs = GridSpec(num_zooms, 2, width_ratios=[3, 1], figure=fig)
+        ax_overlay = fig.add_subplot(gs[:, 0])
+        zoom_axes = [fig.add_subplot(gs[i, 1]) for i in range(num_zooms)]
 
-    # Layout with GridSpec: overlay on left spanning all rows, zoom panels stacked on right
-    from matplotlib.gridspec import GridSpec
-    fig = plt.figure(figsize=(12, 3 * max_zooms))
-    gs = GridSpec(max_zooms, 2, width_ratios=[3, 1], figure=fig)
-
-    ax_overlay = fig.add_subplot(gs[:, 0])
-    zoom_axes = [fig.add_subplot(gs[i, 1]) for i in range(max_zooms)]
-
-    # Overlay: MEA posterior (arr) with markers
+    # Overlay: posterior heatmap with MEA and Viterbi markers
     im0 = ax_overlay.imshow(arr.T, origin="lower", aspect="auto", cmap="viridis")
     ax_overlay.set_title("Posterior (MEA background)")
     if mea_pairs:
         xs = [i for i, j in mea_pairs]
         ys = [j for i, j in mea_pairs]
-        ax_overlay.scatter(xs, ys, c="white", edgecolors="black", s=10, marker="o", label="MEA")
+        ax_overlay.scatter(
+            xs, ys, c="white", edgecolors="black", s=10, marker="o", label="MEA"
+        )
     if viterbi_pairs:
         xs = [i for i, j in viterbi_pairs]
         ys = [j for i, j in viterbi_pairs]
@@ -377,21 +334,39 @@ def plot_diff_and_zoom(
         axz.imshow(sub.T, origin="lower", aspect="auto", cmap="viridis")
         axz.set_title(f"Zoom center ({ci},{cj})")
 
-        # overlay markers within zoom (shift coordinates)
+        # Overlay markers within zoom (shift coordinates)
         mea_sub_x = [i - i0 for i, j in mea_pairs if i0 <= i < i1 and j0 <= j < j1]
         mea_sub_y = [j - j0 for i, j in mea_pairs if i0 <= i < i1 and j0 <= j < j1]
         vit_sub_x = [i - i0 for i, j in viterbi_pairs if i0 <= i < i1 and j0 <= j < j1]
         vit_sub_y = [j - j0 for i, j in viterbi_pairs if i0 <= i < i1 and j0 <= j < j1]
         if mea_sub_x:
-            axz.scatter(mea_sub_x, mea_sub_y, c="white", edgecolors="black", s=30, marker="o", label="MEA")
+            axz.scatter(
+                mea_sub_x,
+                mea_sub_y,
+                c="white",
+                edgecolors="black",
+                s=30,
+                marker="o",
+                label="MEA",
+            )
         if vit_sub_x:
-            axz.scatter(vit_sub_x, vit_sub_y, c="black", s=30, marker="x", label="Viterbi")
-        axz.legend(loc="upper right")
+            axz.scatter(
+                vit_sub_x, vit_sub_y, c="black", s=30, marker="x", label="Viterbi"
+            )
+        # Only show legend if any handles exist (prevents UserWarning if none)
+        handles, _ = axz.get_legend_handles_labels()
+        if handles:
+            axz.legend(loc="upper right")
 
         # Draw rectangle on overlay showing zoom region
-        from matplotlib.patches import Rectangle
-
-        rect = Rectangle((i0, j0), i1 - i0, j1 - j0, linewidth=1.0, edgecolor="yellow", facecolor="none")
+        rect = Rectangle(
+            (i0, j0),
+            i1 - i0,
+            j1 - j0,
+            linewidth=1.0,
+            edgecolor="yellow",
+            facecolor="none",
+        )
         ax_overlay.add_patch(rect)
 
     plt.suptitle(out_path.stem)
@@ -441,7 +416,10 @@ def plot_side_by_side(
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     im0 = axes[0].imshow(mea_grid.T, origin="lower", aspect="auto", cmap="viridis")
-    axes[0].set_title("MEA posterior (post^gamma)" + (f" (gamma={gamma})" if gamma is not None else ""))
+    axes[0].set_title(
+        "MEA posterior (post^gamma)"
+        + (f" (gamma={gamma})" if gamma is not None else "")
+    )
     fig.colorbar(im0, ax=axes[0], fraction=0.046, pad=0.04)
     if mea_pairs:
         xs = [i for i, j in mea_pairs]
@@ -576,24 +554,43 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Plot posterior match probabilities and compare MEA vs Viterbi."
     )
-    parser.add_argument("--align-dir", default=ALIGNMENTS_FOLDER, help="Directory with .sto files")
-    parser.add_argument("--hmm-yaml", default=HMM_YAML, help="HMM YAML file")
-    parser.add_argument("--out-dir", default=str(REPO_ROOT / "results" / "posteriors"), help="Output directory for plots")
-    parser.add_argument("--gamma", type=float, default=None, help="Gamma value for MEA weighting (post^gamma)")
-    parser.add_argument("--max-count", type=int, default=0, help="Max number of outputs (0 = unlimited)")
-    parser.add_argument("--per-pair", action="store_true", help="Produce per-pair heatmaps instead of aggregated")
-    parser.add_argument("--compare", action="store_true", help="Produce side-by-side MEA vs Viterbi comparison for each pair (implies --per-pair)")
-    parser.add_argument("--overlay", action="store_true", help="Overlay MEA and Viterbi on the same chart when using --compare")
-    parser.add_argument("--grid-size", type=int, default=48, help="Grid size for aggregated resampling")
-    parser.add_argument("--zoom-diff", action="store_true", help="Generate difference heatmap and zoomed panels highlighting MEA vs Viterbi disagreements")
+    parser.add_argument(
+        "--gamma",
+        type=float,
+        default=None,
+        help="Gamma value for MEA weighting (post^gamma)",
+    )
+    parser.add_argument(
+        "--max-count", type=int, default=0, help="Max number of outputs (0 = unlimited)"
+    )
+    parser.add_argument(
+        "--per-pair",
+        action="store_true",
+        help="Produce per-pair heatmaps instead of aggregated",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="Produce side-by-side MEA vs Viterbi comparison for each pair (implies --per-pair)",
+    )
+    parser.add_argument(
+        "--overlay",
+        action="store_true",
+        help="Overlay MEA and Viterbi on the same chart when using --compare",
+    )
+    parser.add_argument(
+        "--grid-size", type=int, default=48, help="Grid size for aggregated resampling"
+    )
+    parser.add_argument(
+        "--zoom-diff",
+        action="store_true",
+        help="Generate difference heatmap and zoomed panels highlighting MEA vs Viterbi disagreements",
+    )
     parser.add_argument("--dpi", type=int, default=192, help="Output image DPI")
     parser.add_argument("--fmt", default="png", help="Image format (png, jpg)")
 
     args = parser.parse_args()
 
-    align_dir = Path(args.align_dir)
-    hmm_yaml = Path(args.hmm_yaml)
-    out_dir = Path(args.out_dir)
     gamma = args.gamma
     max_count = int(args.max_count)
     per_pair = bool(args.per_pair) or bool(args.compare)
@@ -602,16 +599,30 @@ def main() -> None:
     dpi = int(args.dpi)
     fmt = str(args.fmt)
 
-    if not hmm_yaml.exists():
-        raise FileNotFoundError(f"HMM yaml not found: {hmm_yaml}")
-    pair_hmm = load_pair_hmm(hmm_yaml)
+    if not HMM_YAML.exists():
+        raise FileNotFoundError(f"HMM yaml not found: {HMM_YAML}")
 
-    sto_files = sorted(align_dir.glob("*.sto"))
+    print("Loading HMM parameters...")
+    pair_hmm = load_pair_hmm(HMM_YAML)
+
+    # Initialize cache
+    cache = PosteriorCache(CACHE_FOLDER)
+    print(f"Using cache at: {CACHE_FOLDER}")
+
+    sto_files = sorted(ALIGNMENTS_FOLDER.glob("*.sto"))
     if not sto_files:
-        raise FileNotFoundError(f"No Stockholm files found in {align_dir}")
+        raise FileNotFoundError(f"No Stockholm files found in {ALIGNMENTS_FOLDER}")
+
+    POSTERIORS_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    mode = "per-pair" if per_pair else "aggregated"
+    print(f"Processing {len(sto_files)} alignment files ({mode} mode)...")
 
     count = 0
-    for sto_path in sto_files:
+    for file_idx, sto_path in enumerate(sto_files):
+        if (file_idx + 1) % 10 == 0 or file_idx == 0:
+            print(f"  [{file_idx + 1}/{len(sto_files)}] {sto_path.stem}")
+
         orig_bytes = sto_path.read_bytes()
         try:
             pairwise = read_rna_stockholm(str(sto_path))
@@ -619,7 +630,6 @@ def main() -> None:
             try:
                 sto_path.write_bytes(orig_bytes)
             except Exception:
-                # If restoration fails, continue but warn
                 print(f"Warning: failed to restore original Stockholm file: {sto_path}")
 
         if not per_pair:
@@ -628,14 +638,15 @@ def main() -> None:
             tshape = (grid_size, grid_size)
             for idx, ref in enumerate(pairwise):
                 seq_x, seq_y = ref.original_sequences
-                post = build_posteriors(pair_hmm, seq_x, seq_y)
+                pair_id = ref.name if ref.name else f"{sto_path.stem}_{idx}"
+                post = cache.get_or_compute_posteriors(pair_id, pair_hmm, seq_x, seq_y)
                 arr = post[1:, 1:]
                 grid = resample_to_grid(arr, tshape)
                 grids.append(grid)
 
                 if ref_count_grid is None:
                     ref_count_grid = np.zeros(tshape, dtype=float)
-                ref_pairs = aligned_pairs_from_alignment(
+                ref_pairs = extract_alignment_pairs(
                     ref.aligned_sequences[0], ref.aligned_sequences[1]
                 )
                 n = arr.shape[0]
@@ -648,7 +659,7 @@ def main() -> None:
 
             if grids:
                 out_name = f"{sto_path.stem}_aggregated.png"
-                out_path = out_dir / out_name
+                out_path = POSTERIORS_FOLDER / out_name
                 plot_aggregated_heatmaps(
                     grids, ref_count_grid, out_path, gamma=gamma, dpi=dpi, fmt=fmt
                 )
@@ -659,42 +670,59 @@ def main() -> None:
         else:
             for idx, ref in enumerate(pairwise):
                 seq_x, seq_y = ref.original_sequences
+                pair_id = ref.name if ref.name else f"{sto_path.stem}_{idx}"
 
-                post = build_posteriors(pair_hmm, seq_x, seq_y)
-                ref_pairs = aligned_pairs_from_alignment(
+                post = cache.get_or_compute_posteriors(pair_id, pair_hmm, seq_x, seq_y)
+                ref_pairs = extract_alignment_pairs(
                     ref.aligned_sequences[0], ref.aligned_sequences[1]
                 )
 
                 out_name = f"{sto_path.stem}_{idx}.png"
-                out_path = out_dir / out_name
+                out_path = POSTERIORS_FOLDER / out_name
 
                 if compare:
-                    # Run MEA and Viterbi aligners to get their alignments
+                    # Get MEA and Viterbi pairs from cache
                     mea_gamma = float(gamma) if gamma is not None else 1.0
-                    mea_aligner = MEAAligner(gamma=mea_gamma)
-                    viterbi_aligner = ViterbiAligner()
-
-                    mea_result = mea_aligner.align(pair_hmm, seq_x, seq_y)
-                    viterbi_result = viterbi_aligner.align(pair_hmm, seq_x, seq_y)
-
-                    mea_pairs = aligned_pairs_from_alignment(
-                        mea_result.alignment.aligned_sequences[0],
-                        mea_result.alignment.aligned_sequences[1],
+                    mea_pairs = cache.get_or_compute_mea(
+                        pair_id, mea_gamma, pair_hmm, seq_x, seq_y
                     )
-                    viterbi_pairs = aligned_pairs_from_alignment(
-                        viterbi_result.alignment.aligned_sequences[0],
-                        viterbi_result.alignment.aligned_sequences[1],
+                    viterbi_pairs = cache.get_or_compute_viterbi(
+                        pair_id, pair_hmm, seq_x, seq_y
                     )
 
                     # If zoom-diff requested, generate difference heatmap + zooms
                     if getattr(args, "zoom_diff", False):
                         out_zoom = out_path.with_name(out_path.stem + "_diff_zoom")
-                        plot_diff_and_zoom(post, mea_pairs, viterbi_pairs, out_zoom, gamma=gamma, dpi=dpi, fmt=fmt)
+                        plot_diff_and_zoom(
+                            post,
+                            mea_pairs,
+                            viterbi_pairs,
+                            out_zoom,
+                            gamma=gamma,
+                            dpi=dpi,
+                            fmt=fmt,
+                        )
                     # If overlay requested, draw both on the same chart
                     elif getattr(args, "overlay", False):
-                        plot_overlay(post, mea_pairs, viterbi_pairs, out_path, gamma=gamma, dpi=dpi, fmt=fmt)
+                        plot_overlay(
+                            post,
+                            mea_pairs,
+                            viterbi_pairs,
+                            out_path,
+                            gamma=gamma,
+                            dpi=dpi,
+                            fmt=fmt,
+                        )
                     else:
-                        plot_side_by_side(post, mea_pairs, viterbi_pairs, out_path, gamma=gamma, dpi=dpi, fmt=fmt)
+                        plot_side_by_side(
+                            post,
+                            mea_pairs,
+                            viterbi_pairs,
+                            out_path,
+                            gamma=gamma,
+                            dpi=dpi,
+                            fmt=fmt,
+                        )
                 else:
                     plot_posterior_heatmap(
                         post, ref_pairs, out_path, gamma=gamma, dpi=dpi, fmt=fmt
@@ -705,7 +733,7 @@ def main() -> None:
                     print(f"Produced {count} heatmaps (limit reached).")
                     return
 
-    print(f"Produced {count} posterior heatmaps at {out_dir}")
+    print(f"\nDone! Produced {count} posterior heatmaps at {POSTERIORS_FOLDER}")
 
 
 if __name__ == "__main__":

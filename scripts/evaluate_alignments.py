@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
 import pandas as pd
-import yaml
 
 from .constants import ALIGNMENTS_FOLDER, CSV_FOLDER, HMM_YAML, GAMMA_VALUES
 
@@ -22,35 +21,8 @@ from src.algorithms.hmm import PairHMM
 from src.algorithms.mea import MEAAligner
 from src.algorithms.viterbi import ViterbiAligner
 from src.types import Alignment, AlignmentResult, EvaluationResult, SequenceType
-from src.types.parameters import (
-    EmissionParameters,
-    GapParameters,
-    HMMParameters,
-    TransitionParameters,
-)
+from src.utils import load_pair_hmm
 from src.utils.stockholm import collect_alignments
-
-
-def load_pair_hmm(yaml_path: Path) -> PairHMM:
-    """Load PairHMM parameters from a YAML file."""
-    with yaml_path.open("r", encoding="utf-8") as handle:
-        payload = yaml.safe_load(handle)
-
-    params_dict = payload.get("parameters", payload)
-    emissions_dict = params_dict["log_emissions"]
-    transitions_dict = params_dict["log_transitions"]["matrix"]
-    gaps_dict = params_dict["gaps"]
-
-    params = HMMParameters(
-        log_emissions=EmissionParameters(
-            match=emissions_dict["match"],
-            insert_x=emissions_dict["insert_x"],
-            insert_y=emissions_dict["insert_y"],
-        ),
-        log_transitions=TransitionParameters(matrix=transitions_dict),
-        gaps=GapParameters(**gaps_dict),
-    )
-    return PairHMM(params)
 
 
 def _sorted_alignments(alignments: Iterable[Alignment]) -> List[Alignment]:
