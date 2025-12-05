@@ -58,12 +58,15 @@ def plot_column_identity_vs_gamma(df: pd.DataFrame, output_dir: Path):
     """Plot column identity vs gamma for all MEA methods with Viterbi baseline."""
     ci_data = df[df["Metric"] == "column_identity"]
 
-    _, ax = plt.subplots(figsize=(12, 7))
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 7))
 
     # Get Viterbi baseline (constant across gamma)
     viterbi_baseline = get_viterbi_baseline(df, "column_identity")
 
-    # Plot each MEA method
+    # Collect all data points above baseline for zoom calculation
+    all_values_above_baseline = []
+
+    # Plot each MEA method on both subplots
     for method in MEA_METHODS:
         method_data = ci_data[
             (ci_data["method"] == method) & (ci_data["Aligner"] == "mea")
@@ -72,32 +75,60 @@ def plot_column_identity_vs_gamma(df: pd.DataFrame, output_dir: Path):
         if method_data.empty:
             continue
 
-        ax.plot(
-            method_data["gamma"],
-            method_data["Mean"],
-            label=f"MEA ({method})",
-            color=METHOD_COLORS.get(method, "#666666"),
-            linewidth=2.5,
-            marker="o",
-            markersize=6,
+        # Filter values above baseline for zoom
+        above_baseline = method_data[method_data["Mean"] > viterbi_baseline]
+        if not above_baseline.empty:
+            all_values_above_baseline.extend(above_baseline["Mean"].tolist())
+
+        # Plot on both subplots
+        for ax in [ax1, ax2]:
+            ax.plot(
+                method_data["gamma"],
+                method_data["Mean"],
+                label=f"MEA ({method})",
+                color=METHOD_COLORS.get(method, "#666666"),
+                linewidth=2.5,
+                marker="o",
+                markersize=6,
+            )
+
+    # Plot Viterbi baseline on both subplots
+    for ax in [ax1, ax2]:
+        ax.axhline(
+            y=viterbi_baseline,
+            color=VITERBI_COLOR,
+            linestyle="--",
+            linewidth=2,
+            label="Viterbi",
         )
 
-    # Plot Viterbi baseline
-    ax.axhline(
-        y=viterbi_baseline,
-        color=VITERBI_COLOR,
-        linestyle="--",
-        linewidth=2,
-        label="Viterbi",
-    )
-
-    ax.set_xlabel("γ (gamma)", fontsize=12)
-    ax.set_ylabel("Mean Column Identity", fontsize=12)
-    ax.set_title(
+    # Left subplot: full view
+    ax1.set_xlabel("γ (gamma)", fontsize=12)
+    ax1.set_ylabel("Mean Column Identity", fontsize=12)
+    ax1.set_title(
         "Column Identity vs Gamma (All MEA Methods)", fontsize=14, fontweight="bold"
     )
-    ax.legend(loc="best", framealpha=0.9)
-    ax.grid(True, alpha=PLOT_GRID_ALPHA)
+    ax1.legend(loc="best", framealpha=0.9)
+    ax1.grid(True, alpha=PLOT_GRID_ALPHA)
+
+    # Right subplot: symmetric zoom around Viterbi baseline
+    if all_values_above_baseline:
+        max_dev = max(abs(val - viterbi_baseline) for val in all_values_above_baseline)
+    else:
+        all_values = ci_data["Mean"].tolist()
+        max_dev = (
+            max(abs(val - viterbi_baseline) for val in all_values)
+            if all_values
+            else 0.01
+        )
+    pad = 0.05 * max_dev if max_dev > 0 else 0.01
+    ax2.set_ylim(viterbi_baseline - (max_dev + pad), viterbi_baseline + (max_dev + pad))
+
+    ax2.set_xlabel("γ (gamma)", fontsize=12)
+    ax2.set_ylabel("Mean Column Identity", fontsize=12)
+    ax2.set_title("Zoom: Above Viterbi Baseline", fontsize=14, fontweight="bold")
+    ax2.legend(loc="best", framealpha=0.9)
+    ax2.grid(True, alpha=PLOT_GRID_ALPHA)
 
     plt.tight_layout()
     output_path = output_dir / "column_identity_vs_gamma.png"
@@ -107,17 +138,19 @@ def plot_column_identity_vs_gamma(df: pd.DataFrame, output_dir: Path):
 
 
 def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
-    """Plot (MEA F1 - Viterbi F1) vs gamma for all methods on one plot."""
+    """Plot (MEA F1 - Viterbi F1) vs gamma for all methods, with zoom above baseline."""
     f1_data = df[df["Metric"] == "f1"].copy()
 
-    _, ax = plt.subplots(figsize=(12, 7))
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 7))
+
+    # Collect all positive delta values for zoom calculation
+    all_positive_deltas: list[float] = []
 
     for method in MEA_METHODS:
         method_data = f1_data[f1_data["method"] == method]
         if method_data.empty:
             continue
 
-        # Pivot to get MEA and Viterbi side by side per gamma
         pivot = method_data.pivot_table(index="gamma", columns="Aligner", values="Mean")
         if "mea" not in pivot.columns or "viterbi" not in pivot.columns:
             continue
@@ -125,32 +158,66 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
         pivot["delta"] = pivot["mea"] - pivot["viterbi"]
         pivot = pivot.sort_index()
 
-        ax.plot(
-            pivot.index,
-            pivot["delta"],
-            label=f"MEA ({method})",
-            color=METHOD_COLORS.get(method, "#666666"),
-            linewidth=2.5,
-            marker="o",
-            markersize=6,
+        positive_deltas = pivot[pivot["delta"] > 0]["delta"]
+        if not positive_deltas.empty:
+            all_positive_deltas.extend(positive_deltas.tolist())
+
+        for ax in (ax1, ax2):
+            ax.plot(
+                pivot.index,
+                pivot["delta"],
+                label=f"MEA ({method})",
+                color=METHOD_COLORS.get(method, "#666666"),
+                linewidth=2.5,
+                marker="o",
+                markersize=6,
+            )
+
+    # Viterbi baseline (delta = 0) on both subplots
+    for ax in (ax1, ax2):
+        ax.axhline(
+            y=0,
+            color=VITERBI_COLOR,
+            linestyle="--",
+            linewidth=2,
+            label="Viterbi (baseline)",
         )
 
-    # Viterbi baseline (delta = 0)
-    ax.axhline(
-        y=0,
-        color=VITERBI_COLOR,
-        linestyle="--",
-        linewidth=2,
-        label="Viterbi (baseline)",
-    )
-
-    ax.set_xlabel("γ (gamma)", fontsize=12)
-    ax.set_ylabel("ΔF1 (MEA - Viterbi)", fontsize=12)
-    ax.set_title(
+    # Left subplot: full view
+    ax1.set_xlabel("γ (gamma)", fontsize=12)
+    ax1.set_ylabel("ΔF1 (MEA - Viterbi)", fontsize=12)
+    ax1.set_title(
         "MEA vs Viterbi F1 Difference (All Methods)", fontsize=14, fontweight="bold"
     )
-    ax.legend(loc="best", framealpha=0.9)
-    ax.grid(True, alpha=PLOT_GRID_ALPHA)
+    ax1.legend(loc="best", framealpha=0.9)
+    ax1.grid(True, alpha=PLOT_GRID_ALPHA)
+
+    # Right subplot: symmetric zoom around baseline (0)
+    # Amplitude driven by positive deltas (improvements); fallback to all if none
+    if all_positive_deltas:
+        max_dev = max(all_positive_deltas)
+    else:
+        all_deltas = []
+        for method in MEA_METHODS:
+            method_data = f1_data[f1_data["method"] == method]
+            pivot = method_data.pivot_table(
+                index="gamma", columns="Aligner", values="Mean"
+            )
+            if "mea" in pivot.columns and "viterbi" in pivot.columns:
+                pivot["delta"] = pivot["mea"] - pivot["viterbi"]
+                all_deltas.extend(pivot["delta"].tolist())
+        max_dev = max(abs(x) for x in all_deltas) if all_deltas else 0.01
+
+    pad = 0.05 * max_dev if max_dev > 0 else 0.01
+    ax2.set_ylim(-(max_dev + pad), (max_dev + pad))
+
+    ax2.set_xlabel("γ (gamma)", fontsize=12)
+    ax2.set_ylabel("ΔF1 (MEA - Viterbi)", fontsize=12)
+    ax2.set_title(
+        "Zoom: Symmetric Around Viterbi Baseline", fontsize=14, fontweight="bold"
+    )
+    ax2.legend(loc="best", framealpha=0.9)
+    ax2.grid(True, alpha=PLOT_GRID_ALPHA)
 
     plt.tight_layout()
     output_path = output_dir / "delta_f1_vs_gamma.png"
@@ -240,6 +307,7 @@ def plot_f1_precision_recall_vs_gamma(df: pd.DataFrame, output_dir: Path):
 
 
 def main():
+    """Main function to plot metrics."""
     # Create output directory
     METRICS_FIGURES_FOLDER.mkdir(parents=True, exist_ok=True)
 
