@@ -134,7 +134,8 @@ class MEAAligner(PairwiseAligner):
         Args:
             gamma: Parameter controlling alignment behavior.
                    For "power": gamma > 0 (exponent, 1.0 = raw posteriors).
-                   For "threshold" and "log_odds": gamma in (0, 1].
+                   For "threshold": gamma in (0, 1].
+                   For "log_odds": gamma in (0, 1) - excludes 1.0 to avoid div by zero.
                    For "probcons": gamma > 0 (but > 0.5 needed for matches).
             method: Weight function ("power", "threshold", "probcons", "log_odds").
         """
@@ -143,7 +144,12 @@ class MEAAligner(PairwiseAligner):
                 f"Unknown method: {method}. Choose from {list(WEIGHT_FUNCTIONS.keys())}"
             )
 
-        if method in ("threshold", "log_odds"):
+        if method == "log_odds":
+            # log_odds requires gamma in (0, 1) - excludes 1.0 to avoid division by zero
+            if gamma <= 0 or gamma >= 1:
+                raise ValueError(f"gamma must be in (0, 1) for method '{method}'.")
+        elif method == "threshold":
+            # threshold allows gamma in (0, 1]
             if gamma <= 0 or gamma > 1:
                 raise ValueError(f"gamma must be in (0, 1] for method '{method}'.")
         else:  # power, probcons

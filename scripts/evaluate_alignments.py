@@ -260,10 +260,11 @@ def main() -> None:
 
         for gamma in GAMMA_VALUES:
             # Skip invalid gamma values for certain methods
-            if method in ("threshold", "log_odds") and gamma > 1:
-                print(
-                    f"Skipping gamma={gamma} for method '{method}' (requires gamma <= 1)"
-                )
+            if method == "threshold" and gamma > 1:
+                print(f"Skipping gamma={gamma} for '{method}' (requires gamma <= 1)")
+                continue
+            if method == "log_odds" and gamma >= 1:
+                print(f"Skipping gamma={gamma} for '{method}' (requires gamma < 1)")
                 continue
 
             print(f"\nEvaluating {method}/gamma={gamma}...")

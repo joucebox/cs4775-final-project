@@ -78,12 +78,16 @@ def test_mea_gamma_must_be_in_valid_range():
         MEAAligner(gamma=-1.0, method="threshold")
     with pytest.raises(ValueError):
         MEAAligner(gamma=1.5, method="threshold")
+    MEAAligner(gamma=1.0, method="threshold")  # Should be fine (1.0 is allowed)
 
-    # Log-odds method: gamma must be in (0, 1]
+    # Log-odds method: gamma must be in (0, 1) - excludes 1.0 to avoid div by zero
     with pytest.raises(ValueError):
         MEAAligner(gamma=0.0, method="log_odds")
     with pytest.raises(ValueError):
+        MEAAligner(gamma=1.0, method="log_odds")  # 1.0 causes division by zero
+    with pytest.raises(ValueError):
         MEAAligner(gamma=1.5, method="log_odds")
+    MEAAligner(gamma=0.99, method="log_odds")  # Should be fine (just under 1.0)
 
     # ProbCons method: gamma must be > 0 (no upper bound)
     with pytest.raises(ValueError):
