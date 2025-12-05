@@ -12,9 +12,10 @@ import pandas as pd
 from .constants import (
     ALIGNMENTS_FOLDER,
     CACHE_FOLDER,
-    CSV_FOLDER,
-    HMM_YAML,
+    EVALUATION_METRICS_FOLDER,
     GAMMA_VALUES,
+    HMM_YAML,
+    MEA_METHODS,
 )
 
 # Ensure repository modules are importable when invoked as a script
@@ -25,7 +26,7 @@ if str(REPO_ROOT) not in sys.path:
 from src.evaluation import evaluate_all_metrics
 from src.algorithms.hmm import PairHMM
 from src.types import Alignment, EvaluationResult, SequenceType
-from src.utils import load_pair_hmm, PosteriorCache
+from src.utils import load_pair_hmm, PosteriorCache, MEAMethod
 from src.utils.stockholm import collect_alignments
 
 
@@ -128,6 +129,7 @@ def _run_aligner_cached(
     references: Sequence[Alignment],
     cache: PosteriorCache,
     gamma: float | None = None,
+    method: MEAMethod = "power",
 ) -> List[Alignment]:
     """Run an aligner using cache for Viterbi and MEA pairs.
 
@@ -137,6 +139,7 @@ def _run_aligner_cached(
         references: List of reference alignments (for original sequences).
         cache: PosteriorCache instance for caching pairs.
         gamma: Gamma value for MEA (required if aligner_name is "mea").
+        method: MEA weight function method (for MEA aligner).
 
     Returns:
         List of predicted Alignment objects.
@@ -162,7 +165,9 @@ def _run_aligner_cached(
         elif aligner_name == "mea":
             if gamma is None:
                 raise ValueError("gamma is required for MEA aligner")
-            pairs = cache.get_or_compute_mea(pair_id, gamma, hmm, seq_x, seq_y)
+            pairs = cache.get_or_compute_mea(
+                pair_id, gamma, hmm, seq_x, seq_y, method=method
+            )
         else:
             raise ValueError(f"Unknown aligner: {aligner_name}")
 
@@ -173,16 +178,19 @@ def _run_aligner_cached(
     return predictions
 
 
-def evaluate_gamma(
+def evaluate_method_gamma(
+    method: MEAMethod,
     gamma: float,
     references: List[Alignment],
     viterbi_predictions: List[Alignment],
     hmm: PairHMM,
     cache: PosteriorCache,
 ) -> None:
-    """Evaluate the MEA and Viterbi aligners against the gold alignments for a given gamma value."""
+    """Evaluate MEA (with given method) and Viterbi against gold alignments."""
 
-    mea_predictions = _run_aligner_cached("mea", hmm, references, cache, gamma=gamma)
+    mea_predictions = _run_aligner_cached(
+        "mea", hmm, references, cache, gamma=gamma, method=method
+    )
     aligner_predictions = {
         "viterbi": viterbi_predictions,
         "mea": mea_predictions,
@@ -218,15 +226,15 @@ def evaluate_gamma(
         print("\nAggregate metrics:")
         print(aggregate_df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
 
-    csv_path = CSV_FOLDER / f"gamma_{gamma}.csv"
+    csv_path = EVALUATION_METRICS_FOLDER / f"{method}_gamma_{gamma}.csv"
     aggregate_df.to_csv(csv_path, index=False)
-    print(f"\nWrote gamma={gamma} aggregate metrics to {csv_path}")
+    print(f"\nWrote {method}/gamma={gamma} metrics to {csv_path}")
 
 
 def main() -> None:
     """Main function to evaluate MEA and Viterbi aligners against gold alignments."""
 
-    CSV_FOLDER.mkdir(parents=True, exist_ok=True)
+    EVALUATION_METRICS_FOLDER.mkdir(parents=True, exist_ok=True)
 
     if not ALIGNMENTS_FOLDER.exists():
         raise FileNotFoundError(f"Alignment directory not found: {ALIGNMENTS_FOLDER}")
@@ -240,13 +248,28 @@ def main() -> None:
     cache = PosteriorCache(CACHE_FOLDER)
     print(f"Using cache at: {CACHE_FOLDER}")
 
-    # Get Viterbi predictions using cache
+    # Get Viterbi predictions using cache (computed once, reused for all methods)
     print("Computing Viterbi alignments...")
     viterbi_predictions = _run_aligner_cached("viterbi", hmm, references, cache)
 
-    for gamma in GAMMA_VALUES:
-        print(f"\nEvaluating gamma={gamma}...")
-        evaluate_gamma(gamma, references, viterbi_predictions, hmm, cache)
+    # Evaluate all methods across all gamma values
+    for method in MEA_METHODS:
+        print(f"\n{'='*60}")
+        print(f"MEA Method: {method}")
+        print(f"{'='*60}")
+
+        for gamma in GAMMA_VALUES:
+            # Skip invalid gamma values for certain methods
+            if method in ("threshold", "log_odds") and gamma > 1:
+                print(
+                    f"Skipping gamma={gamma} for method '{method}' (requires gamma <= 1)"
+                )
+                continue
+
+            print(f"\nEvaluating {method}/gamma={gamma}...")
+            evaluate_method_gamma(
+                method, gamma, references, viterbi_predictions, hmm, cache
+            )
 
 
 if __name__ == "__main__":

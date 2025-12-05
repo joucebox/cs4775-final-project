@@ -7,7 +7,12 @@ from pathlib import Path
 
 import yaml
 
-from .constants import ALIGNMENTS_FOLDER, HMM_YAML, PRECISION, PSEUDOCOUNT
+from .constants import (
+    ALIGNMENTS_FOLDER,
+    HMM_YAML,
+    PRECISION,
+    PSEUDOCOUNT,
+)
 
 # Add the repository root to the Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]

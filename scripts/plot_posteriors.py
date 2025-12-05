@@ -28,7 +28,7 @@ from scripts.constants import (
     ALIGNMENTS_FOLDER,
     CACHE_FOLDER,
     HMM_YAML,
-    POSTERIORS_FOLDER,
+    POSTERIOR_HEATMAPS_FOLDER,
 )
 
 
@@ -613,7 +613,7 @@ def main() -> None:
     if not sto_files:
         raise FileNotFoundError(f"No Stockholm files found in {ALIGNMENTS_FOLDER}")
 
-    POSTERIORS_FOLDER.mkdir(parents=True, exist_ok=True)
+    POSTERIOR_HEATMAPS_FOLDER.mkdir(parents=True, exist_ok=True)
 
     mode = "per-pair" if per_pair else "aggregated"
     print(f"Processing {len(sto_files)} alignment files ({mode} mode)...")
@@ -659,7 +659,7 @@ def main() -> None:
 
             if grids:
                 out_name = f"{sto_path.stem}_aggregated.png"
-                out_path = POSTERIORS_FOLDER / out_name
+                out_path = POSTERIOR_HEATMAPS_FOLDER / out_name
                 plot_aggregated_heatmaps(
                     grids, ref_count_grid, out_path, gamma=gamma, dpi=dpi, fmt=fmt
                 )
@@ -678,7 +678,7 @@ def main() -> None:
                 )
 
                 out_name = f"{sto_path.stem}_{idx}.png"
-                out_path = POSTERIORS_FOLDER / out_name
+                out_path = POSTERIOR_HEATMAPS_FOLDER / out_name
 
                 if compare:
                     # Get MEA and Viterbi pairs from cache
@@ -733,7 +733,7 @@ def main() -> None:
                     print(f"Produced {count} heatmaps (limit reached).")
                     return
 
-    print(f"\nDone! Produced {count} posterior heatmaps at {POSTERIORS_FOLDER}")
+    print(f"\nDone! Produced {count} posterior heatmaps at {POSTERIOR_HEATMAPS_FOLDER}")
 
 
 if __name__ == "__main__":
