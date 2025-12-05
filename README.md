@@ -144,7 +144,11 @@ This will generate plots in `results/figures/`:
 Generate posterior match-probability heatmaps:
 
 ```bash
-poetry run python -m scripts.plot_posteriors --per-pair --compare
+poetry run python -m scripts.plot_posteriors --compare --overlay --per-pair --zoom-diff
+```
+
+```bash
+poetry run python -m scripts.plot_posteriors --compare --overlay --per-pair
 ```
 
 Options include:
