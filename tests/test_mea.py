@@ -89,12 +89,15 @@ def test_mea_gamma_must_be_in_valid_range():
         MEAAligner(gamma=1.5, method="log_odds")
     MEAAligner(gamma=0.99, method="log_odds")  # Should be fine (just under 1.0)
 
-    # ProbCons method: gamma must be > 0 (no upper bound)
+    # ProbCons method: gamma must be >= 0.5 (threshold = 1/(2*gamma) must be <= 1)
     with pytest.raises(ValueError):
         MEAAligner(gamma=0.0, method="probcons")
     with pytest.raises(ValueError):
+        MEAAligner(gamma=0.4, method="probcons")  # < 0.5 not allowed
+    with pytest.raises(ValueError):
         MEAAligner(gamma=-1.0, method="probcons")
-    MEAAligner(gamma=2.0, method="probcons")  # Should be fine
+    MEAAligner(gamma=0.5, method="probcons")  # Should be fine (minimum valid)
+    MEAAligner(gamma=2.0, method="probcons")  # Should be fine (no upper bound)
 
     # Valid cases for power (default)
     MEAAligner(gamma=1.0)

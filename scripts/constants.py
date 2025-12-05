@@ -72,15 +72,15 @@ RANDOM_SEED = 42
 # Plot styling
 # ============================================================================
 ALIGNER_COLORS: Dict[str, str] = {
-    "mea": "#2E86AB",
+    "mea": "#1b4965",
     "viterbi": "#A23B72",
     "shared": "#0c6e17",
 }
 METHOD_COLORS: Dict[str, str] = {
-    "power": "#2ea1ab",
-    "threshold": "#2e62ab",
-    "probcons": "#2e3fab",
-    "log_odds": "#2eab90",
+    "power": "#bee9e8",
+    "threshold": "#cae9ff",
+    "probcons": "#62b6cb",
+    "log_odds": "#5fa8d3",
 }
 PLOT_DPI = 300
 PLOT_GRID_ALPHA = 0.3

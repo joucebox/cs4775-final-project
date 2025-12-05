@@ -135,7 +135,14 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
             markersize=6,
         )
 
-    ax.axhline(y=0, color="black", linestyle="--", linewidth=1, alpha=0.5)
+    # Viterbi baseline (delta = 0)
+    ax.axhline(
+        y=0,
+        color=VITERBI_COLOR,
+        linestyle="--",
+        linewidth=2,
+        label="Viterbi (baseline)",
+    )
 
     ax.set_xlabel("γ (gamma)", fontsize=12)
     ax.set_ylabel("ΔF1 (MEA - Viterbi)", fontsize=12)
