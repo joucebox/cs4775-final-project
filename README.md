@@ -249,7 +249,7 @@ black src/ tests/ scripts/
 - `data/all_sequences.fa`: Large Rfam sequence file
   - Only needed if running `download_rfam_pairs.py` to generate new alignments
   - Not required for the standard pipeline since all alignment data is included
-  - Can be downloaded from https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/Rfam.fa.gz
+  - Can be downloaded from https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/Rfam.fa.gz. Make sure to unzip and rename.
 - `.cache/`: Cached computation results (generated automatically on first run)
 
 ## Authors
