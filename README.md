@@ -60,7 +60,23 @@ cs4775-final-project/
 
 ## Usage
 
-### Running Scripts
+### Full Workflow
+
+Run the complete analysis pipeline with a single command:
+
+```bash
+poetry run python -m scripts.workflow
+```
+
+To include the optional Rfam download step:
+
+```bash
+poetry run python -m scripts.workflow --download
+```
+
+This runs: estimate parameters → evaluate alignments → plot metrics → plot posteriors → plot posterior gain.
+
+### Running Scripts Individually
 
 All scripts should be run as modules using `python -m` to ensure proper import paths:
 
@@ -145,10 +161,6 @@ Generate posterior match-probability heatmaps:
 
 ```bash
 poetry run python -m scripts.plot_posteriors --compare --overlay --per-pair --zoom-diff
-```
-
-```bash
-poetry run python -m scripts.plot_posteriors --compare --overlay --per-pair
 ```
 
 Options include:
