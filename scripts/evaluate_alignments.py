@@ -266,8 +266,8 @@ def main() -> None:
             if method == "log_odds" and gamma >= 1:
                 print(f"Skipping gamma={gamma} for '{method}' (requires gamma < 1)")
                 continue
-            if method == "probcons" and gamma < 0.5:
-                print(f"Skipping gamma={gamma} for '{method}' (requires gamma >= 0.5)")
+            if method == "probcons" and gamma <= 0.5:
+                print(f"Skipping gamma={gamma} for '{method}' (requires gamma > 0.5)")
                 continue
 
             print(f"\nEvaluating {method}/gamma={gamma}...")

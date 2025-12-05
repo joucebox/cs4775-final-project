@@ -4,7 +4,20 @@ CS4775 Final Project: A Maximum Expected Accuracy Approach to Pairwise Alignment
 
 ## Overview
 
-This project implements a pair Hidden Markov Model (HMM) for RNA sequence alignment using maximum likelihood estimation (MLE) from multiple sequence alignments. The implementation compares Maximum Expected Accuracy (MEA) alignment against Viterbi alignment across different gamma values. It includes parameter estimation, forward-backward algorithms, evaluation metrics, and utilities for working with FASTA and Stockholm alignment formats.
+This project implements a pair Hidden Markov Model (HMM) for RNA sequence alignment using maximum likelihood estimation (MLE) from multiple sequence alignments. The implementation compares Maximum Expected Accuracy (MEA) alignment against Viterbi alignment across different gamma values and MEA weighting methods. It includes parameter estimation, forward-backward algorithms, evaluation metrics, and utilities for working with FASTA and Stockholm alignment formats.
+
+### MEA Weighting Methods
+
+The MEA aligner supports four different weighting formulations:
+
+| Method              | Formula                         | Gamma Range | Description                                           |
+| ------------------- | ------------------------------- | ----------- | ----------------------------------------------------- |
+| **power** (default) | w = P^γ                         | γ > 0       | Raises posteriors to power γ; γ=1 uses raw posteriors |
+| **threshold**       | w = P - (1-γ)                   | 0 < γ ≤ 1   | Match beneficial when P > (1-γ)                       |
+| **probcons**        | w = 2γP - 1                     | γ > 0.5     | ProbCons-style; match when P > 1/(2γ)                 |
+| **log_odds**        | w = log(P/(1-P)) + log(γ/(1-γ)) | 0 < γ < 1   | Log-odds formulation (FSA-style)                      |
+
+Each method provides different precision-recall tradeoffs controlled by the gamma parameter.
 
 ## Setup
 
@@ -128,7 +141,7 @@ The output YAML file contains:
 
 #### 3. Evaluate Alignments
 
-Evaluate MEA and Viterbi aligners against gold standard alignments for various gamma values:
+Evaluate MEA and Viterbi aligners against gold standard alignments for all MEA methods and gamma values:
 
 ```bash
 poetry run python -m scripts.evaluate_alignments
@@ -137,13 +150,14 @@ poetry run python -m scripts.evaluate_alignments
 This will:
 
 - Load reference alignments from `data/alignments/`
-- Run both MEA (with varying gamma) and Viterbi aligners
+- Run Viterbi alignment (computed once, reused across comparisons)
+- Run MEA alignment for all four methods (power, threshold, probcons, log_odds) across valid gamma values
 - Compute precision, recall, F1, and column identity metrics
-- Save results to `results/metrics/gamma_*.csv`
+- Save results to `results/metrics/{method}_gamma_{value}.csv`
 
 #### 4. Plot Metrics
 
-Generate plots from the evaluation metrics:
+Generate plots comparing all MEA methods against Viterbi:
 
 ```bash
 poetry run python -m scripts.plot_metrics
@@ -151,9 +165,9 @@ poetry run python -m scripts.plot_metrics
 
 This will generate plots in `results/figures/`:
 
-- `f1_precision_recall_vs_gamma.png` - Precision, recall, and F1 vs gamma
-- `delta_f1_vs_gamma.png` - MEA vs Viterbi F1 difference
-- `column_identity_vs_gamma.png` - Column identity comparison
+- `f1_precision_recall_vs_gamma.png` - Precision, recall, and F1 vs gamma (one subplot per MEA method)
+- `delta_f1_vs_gamma.png` - MEA vs Viterbi F1 difference (all methods on one plot)
+- `column_identity_vs_gamma.png` - Column identity comparison (all methods vs Viterbi baseline)
 
 #### 5. Plot Posteriors
 

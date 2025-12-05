@@ -136,7 +136,7 @@ class MEAAligner(PairwiseAligner):
                    For "power": gamma > 0 (exponent, 1.0 = raw posteriors).
                    For "threshold": gamma in (0, 1].
                    For "log_odds": gamma in (0, 1) - excludes 1.0 to avoid div by zero.
-                   For "probcons": gamma >= 0.5 (threshold = 1/(2*gamma) must be <= 1).
+                   For "probcons": gamma > 0.5 (threshold = 1/(2*gamma) must be < 1).
             method: Weight function ("power", "threshold", "probcons", "log_odds").
         """
         if method not in WEIGHT_FUNCTIONS:
@@ -153,9 +153,9 @@ class MEAAligner(PairwiseAligner):
             if gamma <= 0 or gamma > 1:
                 raise ValueError(f"gamma must be in (0, 1] for method '{method}'.")
         elif method == "probcons":
-            # probcons requires gamma >= 0.5 to produce any matches (threshold = 1/(2*gamma))
-            if gamma < 0.5:
-                raise ValueError(f"gamma must be >= 0.5 for method '{method}'.")
+            # probcons requires gamma > 0.5 to produce any matches (threshold = 1/(2*gamma) < 1)
+            if gamma <= 0.5:
+                raise ValueError(f"gamma must be > 0.5 for method '{method}'.")
         else:  # power
             if gamma <= 0:
                 raise ValueError(f"gamma must be positive for method '{method}'.")

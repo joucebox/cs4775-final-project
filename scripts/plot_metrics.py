@@ -162,7 +162,7 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
 def plot_f1_precision_recall_vs_gamma(df: pd.DataFrame, output_dir: Path):
     """Plot F1, precision, recall vs gamma - one subplot per MEA method."""
     metrics = ["precision", "recall", "f1"]
-    line_styles = {"precision": "-", "recall": "--", "f1": "-."}
+    line_styles = {"precision": "--", "recall": ":", "f1": "-"}
 
     # Filter to methods that have data
     available_methods = [m for m in MEA_METHODS if m in df["method"].unique()]
