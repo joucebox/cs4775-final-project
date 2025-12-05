@@ -54,6 +54,22 @@ def get_viterbi_baseline(df: pd.DataFrame, metric: str) -> float:
     return vit_data["Mean"].mean()
 
 
+def _symmetric_limits(
+    above_vals: list[float],
+    all_vals: list[float],
+    baseline: float,
+    pad_frac: float = 0.05,
+    default_span: float = 0.01,
+) -> tuple[float, float]:
+    vals = above_vals if above_vals else all_vals
+    if not vals:
+        return baseline - default_span, baseline + default_span
+
+    max_dev = max(abs(v - baseline) for v in vals)
+    pad = pad_frac * max_dev if max_dev > 0 else default_span
+    return baseline - (max_dev + pad), baseline + (max_dev + pad)
+
+
 def plot_column_identity_vs_gamma(df: pd.DataFrame, output_dir: Path):
     """Plot column identity vs gamma for all MEA methods with Viterbi baseline."""
     ci_data = df[df["Metric"] == "column_identity"]
@@ -112,21 +128,17 @@ def plot_column_identity_vs_gamma(df: pd.DataFrame, output_dir: Path):
     ax1.grid(True, alpha=PLOT_GRID_ALPHA)
 
     # Right subplot: symmetric zoom around Viterbi baseline
-    if all_values_above_baseline:
-        max_dev = max(abs(val - viterbi_baseline) for val in all_values_above_baseline)
-    else:
-        all_values = ci_data["Mean"].tolist()
-        max_dev = (
-            max(abs(val - viterbi_baseline) for val in all_values)
-            if all_values
-            else 0.01
-        )
-    pad = 0.05 * max_dev if max_dev > 0 else 0.01
-    ax2.set_ylim(viterbi_baseline - (max_dev + pad), viterbi_baseline + (max_dev + pad))
+    ci_all_vals = ci_data["Mean"].tolist()
+    y_min, y_max = _symmetric_limits(
+        above_vals=all_values_above_baseline,
+        all_vals=ci_all_vals,
+        baseline=viterbi_baseline,
+    )
+    ax2.set_ylim(y_min, y_max)
 
     ax2.set_xlabel("γ (gamma)", fontsize=12)
     ax2.set_ylabel("Mean Column Identity", fontsize=12)
-    ax2.set_title("Zoom: Above Viterbi Baseline", fontsize=14, fontweight="bold")
+    ax2.set_title("Zoom around Viterbi baseline", fontsize=14, fontweight="bold")
     ax2.legend(loc="best", framealpha=0.9)
     ax2.grid(True, alpha=PLOT_GRID_ALPHA)
 
@@ -143,8 +155,9 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
 
     _, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 7))
 
-    # Collect all positive delta values for zoom calculation
+    # Collect deltas for zoom calculation
     all_positive_deltas: list[float] = []
+    all_deltas: list[float] = []
 
     for method in MEA_METHODS:
         method_data = f1_data[f1_data["method"] == method]
@@ -161,6 +174,7 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
         positive_deltas = pivot[pivot["delta"] > 0]["delta"]
         if not positive_deltas.empty:
             all_positive_deltas.extend(positive_deltas.tolist())
+        all_deltas.extend(pivot["delta"].tolist())
 
         for ax in (ax1, ax2):
             ax.plot(
@@ -193,29 +207,16 @@ def plot_delta_f1_vs_gamma(df: pd.DataFrame, output_dir: Path):
     ax1.grid(True, alpha=PLOT_GRID_ALPHA)
 
     # Right subplot: symmetric zoom around baseline (0)
-    # Amplitude driven by positive deltas (improvements); fallback to all if none
-    if all_positive_deltas:
-        max_dev = max(all_positive_deltas)
-    else:
-        all_deltas = []
-        for method in MEA_METHODS:
-            method_data = f1_data[f1_data["method"] == method]
-            pivot = method_data.pivot_table(
-                index="gamma", columns="Aligner", values="Mean"
-            )
-            if "mea" in pivot.columns and "viterbi" in pivot.columns:
-                pivot["delta"] = pivot["mea"] - pivot["viterbi"]
-                all_deltas.extend(pivot["delta"].tolist())
-        max_dev = max(abs(x) for x in all_deltas) if all_deltas else 0.01
-
-    pad = 0.05 * max_dev if max_dev > 0 else 0.01
-    ax2.set_ylim(-(max_dev + pad), (max_dev + pad))
+    y_min, y_max = _symmetric_limits(
+        above_vals=all_positive_deltas,
+        all_vals=all_deltas,
+        baseline=0.0,
+    )
+    ax2.set_ylim(y_min, y_max)
 
     ax2.set_xlabel("γ (gamma)", fontsize=12)
     ax2.set_ylabel("ΔF1 (MEA - Viterbi)", fontsize=12)
-    ax2.set_title(
-        "Zoom: Symmetric Around Viterbi Baseline", fontsize=14, fontweight="bold"
-    )
+    ax2.set_title("Zoom around Viterbi baseline", fontsize=14, fontweight="bold")
     ax2.legend(loc="best", framealpha=0.9)
     ax2.grid(True, alpha=PLOT_GRID_ALPHA)
 
