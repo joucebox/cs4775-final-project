@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+from typing import Callable, List, Literal, Tuple
 
 import numpy as np
 
@@ -13,27 +13,121 @@ from src.algorithms.forward_backward import compute_forward, compute_backward
 from src.types import AlignmentResult, SequenceType
 from src.types.alignment import Alignment
 
+# Type alias for weight matrix functions
+WeightFunction = Callable[[np.ndarray, float], np.ndarray]
+MEAMethod = Literal["threshold", "probcons", "log_odds"]
+
+
+def weight_threshold(post_M: np.ndarray, gamma: float) -> np.ndarray:
+    """Threshold-based MEA weights.
+
+    Formula: w[i,j] = P_M(i,j) - (1 - gamma)
+
+    Match is beneficial when P_M(i,j) > (1 - gamma):
+        - gamma = 1.0: threshold > 0 (high recall)
+        - gamma = 0.5: threshold > 0.5 (balanced)
+        - gamma = 0.1: threshold > 0.9 (high precision)
+
+    Args:
+        post_M: Posterior probability matrix (n+1 x m+1).
+        gamma: Threshold parameter in (0, 1].
+
+    Returns:
+        Weight matrix of same shape.
+    """
+    return post_M - (1.0 - gamma)
+
+
+def weight_probcons(post_M: np.ndarray, gamma: float) -> np.ndarray:
+    """ProbCons-style MEA weights (Do et al., 2005).
+
+    Formula: w[i,j] = 2 * gamma * P_M(i,j) - 1
+
+    Match is beneficial when P_M(i,j) > 1 / (2 * gamma):
+        - gamma = 1.0: threshold > 0.5
+        - gamma = 0.75: threshold > 0.67
+        - gamma = 0.5: threshold > 1.0 (no matches)
+
+    Note: Requires gamma > 0.5 to produce any matches.
+
+    Args:
+        post_M: Posterior probability matrix (n+1 x m+1).
+        gamma: Scaling parameter, typically > 0.5.
+
+    Returns:
+        Weight matrix of same shape.
+    """
+    return 2.0 * gamma * post_M - 1.0
+
+
+def weight_log_odds(post_M: np.ndarray, gamma: float) -> np.ndarray:
+    """Log-odds MEA weights (Bradley et al., 2009 - FSA).
+
+    Formula: w[i,j] = log(P / (1-P)) + log(gamma / (1-gamma))
+
+    Interprets gamma as prior probability of match. Numerically stable
+    for extreme posteriors.
+
+    Match is beneficial when P_M(i,j) > (1 - gamma):
+        - gamma = 0.9: threshold > 0.1
+        - gamma = 0.5: threshold > 0.5
+        - gamma = 0.1: threshold > 0.9
+
+    Args:
+        post_M: Posterior probability matrix (n+1 x m+1).
+        gamma: Prior match probability in (0, 1).
+
+    Returns:
+        Weight matrix of same shape.
+    """
+    eps = 1e-10  # Numerical stability
+    P = np.clip(post_M, eps, 1.0 - eps)
+    log_odds_posterior = np.log(P / (1.0 - P))
+    log_odds_prior = math.log(gamma / (1.0 - gamma))
+    return log_odds_posterior + log_odds_prior
+
+
+# Registry of weight functions
+WEIGHT_FUNCTIONS: dict[MEAMethod, WeightFunction] = {
+    "threshold": weight_threshold,
+    "probcons": weight_probcons,
+    "log_odds": weight_log_odds,
+}
+
 
 class MEAAligner(PairwiseAligner):
-    """Maximum Expected Accuracy (MEA) alignment algorithm."""
+    """Maximum Expected Accuracy (MEA) alignment algorithm.
 
-    def __init__(self, gamma: float = 1.0) -> None:
-        """Initialize the MEA aligner with a configurable gamma parameter.
+    Supports three formulations for the weight matrix:
+        - "threshold": w = P - (1 - gamma), match when P > (1 - gamma)
+        - "probcons": w = 2*gamma*P - 1, match when P > 1/(2*gamma)
+        - "log_odds": w = log(P/(1-P)) + log(gamma/(1-gamma))
+    """
 
-        Interpretation of gamma:
-            - We first compute posterior match probabilities P(M at (i,j) | x,y).
-            - The DP reward for aligning i with j is:
+    def __init__(self, gamma: float = 1.0, method: MEAMethod = "threshold") -> None:
+        """Initialize the MEA aligner.
 
-                    w[i][j] = (posterior_M[i][j]) ** gamma
-
-              so:
-                * gamma > 1 accentuates high-confidence matches,
-                * gamma < 1 flattens differences between high/low posteriors,
-                * gamma = 1 uses the raw posterior probabilities.
+        Args:
+            gamma: Parameter controlling precision-recall tradeoff.
+                   For "threshold" and "log_odds": gamma in (0, 1].
+                   For "probcons": gamma > 0 (but > 0.5 needed for matches).
+            method: Weight function to use ("threshold", "probcons", "log_odds").
         """
-        if gamma <= 0:
-            raise ValueError("gamma must be positive.")
+        if method not in WEIGHT_FUNCTIONS:
+            raise ValueError(
+                f"Unknown method: {method}. Choose from {list(WEIGHT_FUNCTIONS.keys())}"
+            )
+
+        if method in ("threshold", "log_odds"):
+            if gamma <= 0 or gamma > 1:
+                raise ValueError(f"gamma must be in (0, 1] for method '{method}'.")
+        else:  # probcons
+            if gamma <= 0:
+                raise ValueError("gamma must be positive for method 'probcons'.")
+
         self.gamma = gamma
+        self.method = method
+        self._weight_fn = WEIGHT_FUNCTIONS[method]
 
     def _compute_match_posteriors(
         self,
@@ -48,7 +142,7 @@ class MEAAligner(PairwiseAligner):
         if math.isfinite(logZ_f) and math.isfinite(logZ_b):
             if abs(logZ_f - logZ_b) > 1e-5:
                 raise ValueError(
-                    f"Forward and backward log-normalizers disagree by more than allowed: {logZ_f} vs {logZ_b}"
+                    f"Forward and backward log-normalizers disagree: {logZ_f} vs {logZ_b}"
                 )
             logZ = (logZ_f + logZ_b) * 0.5
         else:
@@ -71,8 +165,8 @@ class MEAAligner(PairwiseAligner):
         return post_M
 
     def _build_weight_matrix(self, post_M: np.ndarray) -> np.ndarray:
-        """Raise posterior matrix to gamma power to form MEA weights."""
-        return np.power(post_M, self.gamma)
+        """Build MEA weight matrix using the selected method."""
+        return self._weight_fn(post_M, self.gamma)
 
     def _initialize_dp_tables(
         self,
@@ -216,4 +310,10 @@ class MEAAligner(PairwiseAligner):
         )
 
 
-__all__ = ["MEAAligner"]
+__all__ = [
+    "MEAAligner",
+    "MEAMethod",
+    "weight_threshold",
+    "weight_probcons",
+    "weight_log_odds",
+]

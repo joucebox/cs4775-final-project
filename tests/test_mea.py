@@ -62,16 +62,44 @@ def _toy_hmm() -> PairHMM:
     return PairHMM(params)
 
 
-def test_mea_gamma_must_be_positive():
-    """MEAAligner should reject non-positive gamma values."""
+def test_mea_gamma_must_be_in_valid_range():
+    """MEAAligner should reject gamma values outside valid range for each method."""
+    # Threshold method: gamma must be in (0, 1]
     with pytest.raises(ValueError):
-        MEAAligner(gamma=0.0)
+        MEAAligner(gamma=0.0, method="threshold")
     with pytest.raises(ValueError):
-        MEAAligner(gamma=-1.0)
+        MEAAligner(gamma=-1.0, method="threshold")
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=1.5, method="threshold")
 
-    # This should be fine
+    # Log-odds method: gamma must be in (0, 1]
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=0.0, method="log_odds")
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=1.5, method="log_odds")
+
+    # ProbCons method: gamma must be > 0 (no upper bound)
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=0.0, method="probcons")
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=-1.0, method="probcons")
+    MEAAligner(gamma=2.0, method="probcons")  # Should be fine
+
+    # Valid cases for threshold (default)
     MEAAligner(gamma=1.0)
-    MEAAligner(gamma=2.5)
+    MEAAligner(gamma=0.5)
+
+
+def test_mea_method_selection():
+    """MEAAligner should accept different methods."""
+    # All methods should be valid
+    MEAAligner(gamma=0.5, method="threshold")
+    MEAAligner(gamma=0.5, method="log_odds")
+    MEAAligner(gamma=0.75, method="probcons")
+
+    # Invalid method should raise
+    with pytest.raises(ValueError):
+        MEAAligner(gamma=0.5, method="invalid")
 
 
 def test_mea_alignment_basic_properties():
