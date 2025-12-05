@@ -54,6 +54,9 @@ GAMMA_VALUES: List[float] = [
     0.75,
     0.875,
     0.95,
+    1.5,
+    2.0,
+    5.0,
 ]
 MEA_METHODS: List[str] = ["power", "threshold", "probcons", "log_odds"]
 
