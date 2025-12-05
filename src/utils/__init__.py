@@ -8,6 +8,7 @@ from .posterior_analysis import (
     extract_alignment_pairs,
     compute_posterior_metrics,
     PosteriorCache,
+    MEAMethod,
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "extract_alignment_pairs",
     "compute_posterior_metrics",
     "PosteriorCache",
+    "MEAMethod",
 ]

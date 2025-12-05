@@ -12,7 +12,7 @@ import numpy as np
 
 from src.algorithms.forward_backward import compute_forward, compute_backward
 from src.algorithms.hmm import PairHMM
-from src.algorithms.mea import MEAAligner
+from src.algorithms.mea import MEAAligner, MEAMethod
 from src.algorithms.viterbi import ViterbiAligner
 from src.types import SequenceType
 
@@ -40,8 +40,12 @@ class PosteriorCache:
     def _viterbi_path(self, pair_id: str) -> Path:
         return self.viterbi_dir / f"{self._safe_id(pair_id)}.json"
 
-    def _mea_path(self, pair_id: str, gamma: float) -> Path:
-        return self.mea_dir / f"{self._safe_id(pair_id)}_gamma_{gamma:.4f}.json"
+    def _mea_path(
+        self, pair_id: str, gamma: float, method: MEAMethod = "power"
+    ) -> Path:
+        return (
+            self.mea_dir / f"{self._safe_id(pair_id)}_{method}_gamma_{gamma:.4f}.json"
+        )
 
     def _load_pairs(self, path: Path) -> Optional[set[Tuple[int, int]]]:
         if path.exists():
@@ -73,15 +77,19 @@ class PosteriorCache:
         self._save_pairs(self._viterbi_path(pair_id), pairs)
 
     def load_mea_pairs(
-        self, pair_id: str, gamma: float
+        self, pair_id: str, gamma: float, method: MEAMethod = "power"
     ) -> Optional[set[Tuple[int, int]]]:
-        return self._load_pairs(self._mea_path(pair_id, gamma))
+        return self._load_pairs(self._mea_path(pair_id, gamma, method))
 
     def save_mea_pairs(
-        self, pair_id: str, gamma: float, pairs: set[Tuple[int, int]]
+        self,
+        pair_id: str,
+        gamma: float,
+        pairs: set[Tuple[int, int]],
+        method: MEAMethod = "power",
     ) -> None:
         self._ensure_dirs()
-        self._save_pairs(self._mea_path(pair_id, gamma), pairs)
+        self._save_pairs(self._mea_path(pair_id, gamma, method), pairs)
 
     def get_or_compute_posteriors(
         self,
@@ -125,18 +133,31 @@ class PosteriorCache:
         hmm: PairHMM,
         x_seq: SequenceType,
         y_seq: SequenceType,
+        method: MEAMethod = "power",
     ) -> set[Tuple[int, int]]:
-        """Load MEA pairs from cache or compute and save."""
-        cached = self.load_mea_pairs(pair_id, gamma)
+        """Load MEA pairs from cache or compute and save.
+
+        Args:
+            pair_id: Unique identifier for the sequence pair.
+            gamma: Gamma parameter for MEA.
+            hmm: The pair HMM model.
+            x_seq: First sequence.
+            y_seq: Second sequence.
+            method: MEA weight function ("power", "threshold", "probcons", "log_odds").
+
+        Returns:
+            Set of aligned position pairs.
+        """
+        cached = self.load_mea_pairs(pair_id, gamma, method)
         if cached is not None:
             return cached
-        aligner = MEAAligner(gamma=gamma)
+        aligner = MEAAligner(gamma=gamma, method=method)
         result = aligner.align(hmm, x_seq, y_seq)
         pairs = extract_alignment_pairs(
             result.alignment.aligned_sequences[0],
             result.alignment.aligned_sequences[1],
         )
-        self.save_mea_pairs(pair_id, gamma, pairs)
+        self.save_mea_pairs(pair_id, gamma, pairs, method)
         return pairs
 
 
@@ -338,4 +359,5 @@ __all__ = [
     "extract_alignment_pairs",
     "compute_posterior_metrics",
     "PosteriorCache",
+    "MEAMethod",
 ]

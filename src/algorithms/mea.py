@@ -15,7 +15,29 @@ from src.types.alignment import Alignment
 
 # Type alias for weight matrix functions
 WeightFunction = Callable[[np.ndarray, float], np.ndarray]
-MEAMethod = Literal["threshold", "probcons", "log_odds"]
+MEAMethod = Literal["power", "threshold", "probcons", "log_odds"]
+
+
+def weight_power(post_M: np.ndarray, gamma: float) -> np.ndarray:
+    """Power-based MEA weights (original formulation).
+
+    Formula: w[i,j] = P_M(i,j) ^ gamma
+
+    Raises posteriors to the power of gamma:
+        - gamma > 1: accentuates high-confidence matches
+        - gamma < 1: flattens differences between posteriors
+        - gamma = 1: raw posteriors (no transformation)
+
+    Note: No threshold effect - all positive posteriors contribute.
+
+    Args:
+        post_M: Posterior probability matrix (n+1 x m+1).
+        gamma: Exponent parameter, must be > 0.
+
+    Returns:
+        Weight matrix of same shape.
+    """
+    return np.power(post_M, gamma)
 
 
 def weight_threshold(post_M: np.ndarray, gamma: float) -> np.ndarray:
@@ -89,6 +111,7 @@ def weight_log_odds(post_M: np.ndarray, gamma: float) -> np.ndarray:
 
 # Registry of weight functions
 WEIGHT_FUNCTIONS: dict[MEAMethod, WeightFunction] = {
+    "power": weight_power,
     "threshold": weight_threshold,
     "probcons": weight_probcons,
     "log_odds": weight_log_odds,
@@ -98,20 +121,22 @@ WEIGHT_FUNCTIONS: dict[MEAMethod, WeightFunction] = {
 class MEAAligner(PairwiseAligner):
     """Maximum Expected Accuracy (MEA) alignment algorithm.
 
-    Supports three formulations for the weight matrix:
+    Supports four formulations for the weight matrix:
+        - "power": w = P^gamma (default, original formulation)
         - "threshold": w = P - (1 - gamma), match when P > (1 - gamma)
         - "probcons": w = 2*gamma*P - 1, match when P > 1/(2*gamma)
         - "log_odds": w = log(P/(1-P)) + log(gamma/(1-gamma))
     """
 
-    def __init__(self, gamma: float = 1.0, method: MEAMethod = "threshold") -> None:
+    def __init__(self, gamma: float = 1.0, method: MEAMethod = "power") -> None:
         """Initialize the MEA aligner.
 
         Args:
-            gamma: Parameter controlling precision-recall tradeoff.
+            gamma: Parameter controlling alignment behavior.
+                   For "power": gamma > 0 (exponent, 1.0 = raw posteriors).
                    For "threshold" and "log_odds": gamma in (0, 1].
                    For "probcons": gamma > 0 (but > 0.5 needed for matches).
-            method: Weight function to use ("threshold", "probcons", "log_odds").
+            method: Weight function ("power", "threshold", "probcons", "log_odds").
         """
         if method not in WEIGHT_FUNCTIONS:
             raise ValueError(
@@ -121,9 +146,9 @@ class MEAAligner(PairwiseAligner):
         if method in ("threshold", "log_odds"):
             if gamma <= 0 or gamma > 1:
                 raise ValueError(f"gamma must be in (0, 1] for method '{method}'.")
-        else:  # probcons
+        else:  # power, probcons
             if gamma <= 0:
-                raise ValueError("gamma must be positive for method 'probcons'.")
+                raise ValueError(f"gamma must be positive for method '{method}'.")
 
         self.gamma = gamma
         self.method = method
@@ -313,6 +338,7 @@ class MEAAligner(PairwiseAligner):
 __all__ = [
     "MEAAligner",
     "MEAMethod",
+    "weight_power",
     "weight_threshold",
     "weight_probcons",
     "weight_log_odds",
