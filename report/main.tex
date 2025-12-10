@@ -97,14 +97,401 @@ Abstract (200 words minimum)
 % Methods
 %====================================
 \section{Methods}
-\lipsum[1] % place holder, delete
 
-% Example of referencing figures and tables using labels.
-See Figure~\ref{fig:ex} and Table~\ref{tab:ex}.
+\subsection{Pair Hidden Markov Model}\label{sec:phmm}
 
-% Example of citations.
-Make sure that you understand the difference between \citep{Saitou1987} and \citet{Saitou1987} in \texttt{natbib}.
+We model a pair of RNA sequences
+\[
+    X = x_1,\dots,x_{L_X},\qquad
+    Y = y_1,\dots,y_{L_Y},
+\]
+over alphabet $\mathcal{A} = \{A,C,G,U\}$. Their alignment is represented by a hidden state sequence
+\[
+    Z = (z_1,\dots,z_T),\qquad z_t \in \mathcal{S} = \{M,X,Y\},
+\]
+where $M$ denotes a match (or substitution), $X$ an insertion in $X$ (gap in $Y$), and $Y$ an insertion in $Y$ (gap in $X$).
 
+We associate to each step $t$ a pair of prefix indices $(i_t,j_t)$ specifying how many characters of $X$ and $Y$ have been consumed. The state $z_t$ determines which symbols are emitted and how indices advance:
+\[
+    (i_{t+1}, j_{t+1}) =
+    \begin{cases}
+        (i_t+1, j_t+1), & z_t = M, \\
+        (i_t+1, j_t),   & z_t = X, \\
+        (i_t,   j_t+1), & z_t = Y.
+    \end{cases}
+\]
+A path $Z$ is valid if all characters are consumed, i.e.\ $(i_T,j_T)=(L_X,L_Y)$.
+
+\subsubsection{Emission model}
+
+For $z_t \in \{M,X,Y\}$ we define emission distributions
+\[
+    e_M(x,y) = P(\text{emit }(x,y)\mid z_t=M),\qquad
+    e_X(x)    = P(\text{emit }x\mid z_t=X),\qquad
+    e_Y(y)    = P(\text{emit }y\mid z_t=Y),
+\]
+with normalizations
+$\sum_{x,y\in\mathcal{A}} e_M(x,y) = 1$,
+$\sum_{x\in\mathcal{A}} e_X(x) = 1$,
+$\sum_{y\in\mathcal{A}} e_Y(y) = 1$.
+At step $t$ the emission probability is
+\[
+    e_{z_t} =
+    \begin{cases}
+        e_M(x_{i_t+1}, y_{j_t+1}), & z_t = M, \\[2pt]
+        e_X(x_{i_t+1}),            & z_t = X, \\[2pt]
+        e_Y(y_{j_t+1}),            & z_t = Y.
+    \end{cases}
+\]
+
+\subsubsection{Start, transition, and end distributions}
+
+The HMM parameters are:
+\begin{itemize}
+    \item Start distribution
+          \[
+              \pi(s) = P(z_1=s),\qquad s \in \mathcal{S},
+          \]
+          taken as uniform ($\pi(M)=\pi(X)=\pi(Y)=\tfrac{1}{3}$) unless noted.
+    \item Transition matrix
+          \[
+              a_{uv} = P(z_{t+1}=v \mid z_t=u),\qquad u,v \in \mathcal{S},
+          \]
+          with $\sum_v a_{uv}=1$ and constraints $a_{XY}=a_{YX}=0$ (no direct transitions between insert states), allowing an affine gap penalty via distinct gap-open ($M\to X/Y$) and gap-extend ($X\to X$, $Y\to Y$) probabilities.
+    \item End distribution
+          \[
+              \rho(s) = P(\text{end}\mid z_T=s),\qquad s\in\mathcal{S}.
+          \]
+\end{itemize}
+
+\subsubsection{Joint probability and log-space parameterization}
+
+For any valid path $Z=(z_1,\dots,z_T)$,
+\[
+    P(X,Y,Z)
+    = \pi(z_1)
+    \Bigl[\prod_{t=1}^{T-1} a_{z_t z_{t+1}}\Bigr]
+    \Bigl[\prod_{t=1}^{T} e_{z_t}\Bigr]
+    \rho(z_T).
+\]
+The marginal likelihood sums over all valid alignments,
+\[
+    P(X,Y) = \sum_{Z\in\mathcal{Z}(X,Y)} P(X,Y,Z),
+\]
+where $\mathcal{Z}(X,Y)$ is the set of paths that consume both sequences.
+
+All probabilities are represented in log-space:
+$\log\pi(s)$, $\log a_{uv}$, $\log\rho(s)$, $\log e_M(x,y)$, $\log e_X(x)$, $\log e_Y(y)$.
+Then
+\[
+    \log P(X,Y,Z)
+    = \log\pi(z_1)
+    + \sum_{t=1}^{T-1} \log a_{z_t z_{t+1}}
+    + \sum_{t=1}^{T} \log e_{z_t}
+    + \log\rho(z_T).
+\]
+
+\subsection{Parameter estimation from aligned sequences}
+
+We estimate emission and transition parameters from reference alignments. Each alignment yields strings
+$\tilde X, \tilde Y \in (\mathcal{A}\cup\{-\})^L$.
+
+\subsubsection{Column-wise state labeling}
+
+For each column $\ell$ we assign a state
+\[
+    s_\ell =
+    \begin{cases}
+        M           & \tilde x_\ell\in\mathcal{A},\ \tilde y_\ell\in\mathcal{A}, \\
+        X           & \tilde x_\ell\in\mathcal{A},\ \tilde y_\ell = -,           \\
+        Y           & \tilde x_\ell = -, \ \tilde y_\ell\in\mathcal{A},          \\
+        \varnothing & \text{otherwise (e.g.\ both gaps)}.
+    \end{cases}
+\]
+Columns with $s_\ell=\varnothing$ are ignored; transitions are not propagated across them.
+
+\subsubsection{Sufficient statistics}
+
+We collect counts
+\begin{align*}
+    c_M(a,b)             & = \#\{\ell : s_\ell = M,\ \tilde x_\ell = a,\ \tilde y_\ell=b\}, \\
+    c_X(a)               & = \#\{\ell : s_\ell = X,\ \tilde x_\ell = a\},                   \\
+    c_Y(b)               & = \#\{\ell : s_\ell = Y,\ \tilde y_\ell = b\},                   \\
+    c_{\mathrm{tr}}(u,v) & = \#\{\ell : s_\ell = u,\ s_{\ell+1} = v,\ u,v\in\mathcal{S}\},
+\end{align*}
+skipping $\ell$ with $s_\ell=\varnothing$.
+
+\subsubsection{Emissions with pseudocounts}
+
+With pseudocount $\eta\ge0$ and $\mathcal{A}=\{A,C,G,U\}$, define
+\[
+    T_M(a) = \sum_{b\in\mathcal{A}} (c_M(a,b)+\eta).
+\]
+Then
+\[
+    e_M(a,b) =
+    \begin{cases}
+        \dfrac{c_M(a,b)+\eta}{T_M(a)}, & T_M(a) > 0, \\[6pt]
+        \dfrac{1}{|\mathcal{A}|},      & T_M(a) = 0.
+    \end{cases}
+\]
+For insertions, with
+$T_X = \sum_a (c_X(a)+\eta)$ and $T_Y = \sum_b (c_Y(b)+\eta)$,
+\[
+    e_X(a) =
+    \begin{cases}
+        \dfrac{c_X(a)+\eta}{T_X}, & T_X>0, \\[6pt]
+        \dfrac{1}{|\mathcal{A}|}, & T_X=0,
+    \end{cases}
+    \qquad
+    e_Y(b) =
+    \begin{cases}
+        \dfrac{c_Y(b)+\eta}{T_Y}, & T_Y>0, \\[6pt]
+        \dfrac{1}{|\mathcal{A}|}, & T_Y=0.
+    \end{cases}
+\]
+In implementation we store $\log e_M$, $\log e_X$, $\log e_Y$, with zero probabilities encoded as $-\infty$.
+
+\subsubsection{Transitions and affine-gap parameters}
+
+Raw transition estimates are
+\[
+    \tilde a_{uv} =
+    \begin{cases}
+        0,                                                                     & (u,v)\in\{(X,Y),(Y,X)\}, \\[4pt]
+        \dfrac{c_{\mathrm{tr}}(u,v)+\eta}{\sum_w (c_{\mathrm{tr}}(u,w)+\eta)}, & \text{if denominator}>0, \\[6pt]
+        0,                                                                     & \text{otherwise},
+    \end{cases}
+\]
+followed by row-wise renormalization over allowed $v$ (excluding $X\to Y$ and $Y\to X$) to obtain $a_{uv}$. Again, $\log a_{uv}$ is stored, with $-\infty$ for zero entries.
+
+We summarize affine-gap parameters as
+\[
+    \delta = a_{MX}+a_{MY},\qquad
+    \epsilon_X = a_{XX},\qquad
+    \epsilon_Y = a_{YY},\qquad
+    \epsilon = \tfrac12(\epsilon_X+\epsilon_Y).
+\]
+
+\subsection{Forward--backward inference}
+
+We perform log-space dynamic programming on the grid
+$0\le i\le L_X$, $0\le j\le L_Y$ using tables
+$F_s(i,j)$ and $B_s(i,j)$ for $s\in\{M,X,Y\}$, where $(i,j)$ encodes consumed prefixes.
+We use the log-sum-exp operator
+\[
+    \operatorname{LSE}(v_1,\dots,v_k) = \log\Bigl(\sum_{m=1}^k e^{v_m}\Bigr)
+\]
+for stable accumulation.
+
+\subsubsection{Forward recursion}
+
+Initialize all $F_s(i,j)=-\infty$. The first emissions are
+\[
+    F_X(1,0) = \log\pi(X)+\log e_X(x_1),\quad
+    F_Y(0,1) = \log\pi(Y)+\log e_Y(y_1),\quad
+    F_M(1,1) = \log\pi(M)+\log e_M(x_1,y_1),
+\]
+if the corresponding indices are in range.
+
+For $1\le i\le L_X$, $1\le j\le L_Y$, the recurrences (omitting impossible moves) are
+\begin{align*}
+    F_M(i,j)
+     & = \operatorname{LSE}\Bigl(
+    F_M(i-1,j-1)+\log a_{MM},\;
+    F_X(i-1,j-1)+\log a_{XM},\;
+    F_Y(i-1,j-1)+\log a_{YM}
+    \Bigr) + \log e_M(x_i,y_j),   \\
+    F_X(i,j)
+     & = \operatorname{LSE}\Bigl(
+    F_M(i-1,j)+\log a_{MX},\;
+    F_X(i-1,j)+\log a_{XX}
+    \Bigr) + \log e_X(x_i),       \\
+    F_Y(i,j)
+     & = \operatorname{LSE}\Bigl(
+    F_M(i,j-1)+\log a_{MY},\;
+    F_Y(i,j-1)+\log a_{YY}
+    \Bigr) + \log e_Y(y_j).
+\end{align*}
+The forward log-partition is
+\[
+    \log Z_f = \operatorname{LSE}\bigl(
+    F_M(L_X,L_Y)+\log\rho(M),\;
+    F_X(L_X,L_Y)+\log\rho(X),\;
+    F_Y(L_X,L_Y)+\log\rho(Y)
+    \bigr).
+\]
+
+\subsubsection{Backward recursion}
+
+Initialize all $B_s(i,j)=-\infty$ and at $(L_X,L_Y)$ set
+\[
+    B_M(L_X,L_Y)=\log\rho(M),\quad
+    B_X(L_X,L_Y)=\log\rho(X),\quad
+    B_Y(L_X,L_Y)=\log\rho(Y).
+\]
+For $0\le i\le L_X$, $0\le j\le L_Y$, let $\mathbf{1}[\cdot]$ denote an indicator and include only in-bounds moves. Then
+\begin{align*}
+    B_M(i,j) & = \operatorname{LSE}\Bigl(
+    \mathbf{1}[i<L_X,j<L_Y]\bigl(\log a_{MM}+\log e_M(x_{i+1},y_{j+1})+B_M(i+1,j+1)\bigr), \\[-2pt]
+             & \hspace{2.4cm}
+    \mathbf{1}[i<L_X]\bigl(\log a_{MX}+\log e_X(x_{i+1})+B_X(i+1,j)\bigr),                 \\[-2pt]
+             & \hspace{2.4cm}
+    \mathbf{1}[j<L_Y]\bigl(\log a_{MY}+\log e_Y(y_{j+1})+B_Y(i,j+1)\bigr)
+    \Bigr),                                                                                \\[4pt]
+    B_X(i,j) & = \operatorname{LSE}\Bigl(
+    \mathbf{1}[i<L_X,j<L_Y]\bigl(\log a_{XM}+\log e_M(x_{i+1},y_{j+1})+B_M(i+1,j+1)\bigr), \\[-2pt]
+             & \hspace{2.4cm}
+    \mathbf{1}[i<L_X]\bigl(\log a_{XX}+\log e_X(x_{i+1})+B_X(i+1,j)\bigr)
+    \Bigr),                                                                                \\[4pt]
+    B_Y(i,j) & = \operatorname{LSE}\Bigl(
+    \mathbf{1}[i<L_X,j<L_Y]\bigl(\log a_{YM}+\log e_M(x_{i+1},y_{j+1})+B_M(i+1,j+1)\bigr), \\[-2pt]
+             & \hspace{2.4cm}
+    \mathbf{1}[j<L_Y]\bigl(\log a_{YY}+\log e_Y(y_{j+1})+B_Y(i,j+1)\bigr)
+    \Bigr),
+\end{align*}
+using $a_{XY}=a_{YX}=0$. The backward log-partition is
+\[
+    \log Z_b = \operatorname{LSE}\bigl(
+    \log\pi(M)+\log e_M(x_1,y_1)+B_M(1,1),\;
+    \log\pi(X)+\log e_X(x_1)+B_X(1,0),\;
+    \log\pi(Y)+\log e_Y(y_1)+B_Y(0,1)
+    \bigr).
+\]
+We use $\log Z = \tfrac12(\log Z_f+\log Z_b)$ as a numerically stable estimate of $\log P(X,Y)$.
+
+\subsection{Viterbi decoding (MAP alignment)}
+
+The maximum a posteriori alignment is
+\[
+    Z^\star = \arg\max_{Z\in\mathcal{Z}(X,Y)} P(X,Y,Z)
+    = \arg\max_{Z\in\mathcal{Z}(X,Y)} \log P(X,Y,Z).
+\]
+
+\subsubsection{Dynamic programming}
+
+For $0\le i\le L_X$, $0\le j\le L_Y$ and $s\in\{M,X,Y\}$ define
+\[
+    V^s_{i,j}
+    =
+    \max_{Z:\,(i_T,j_T)=(i,j),\,z_T=s}
+    \log P(X_{1:i},Y_{1:j},Z),
+\]
+with $V^s_{i,j}=-\infty$ if no such path exists.
+
+Initialization at $(0,0)$ is $V^M_{0,0}=V^X_{0,0}=V^Y_{0,0}=-\infty$. First non-empty cells:
+\[
+    V^X_{1,0} = \log\pi(X)+\log e_X(x_1),\quad
+    V^Y_{0,1} = \log\pi(Y)+\log e_Y(y_1),\quad
+    V^M_{1,1} = \log\pi(M)+\log e_M(x_1,y_1).
+\]
+Leading gaps are filled via
+\begin{align*}
+    V^X_{i,0}
+     & = \log e_X(x_i)
+    + \max\bigl\{V^M_{i-1,0}+\log a_{MX},\; V^X_{i-1,0}+\log a_{XX}\bigr\},
+    \quad i=2,\dots,L_X, \\
+    V^Y_{0,j}
+     & = \log e_Y(y_j)
+    + \max\bigl\{V^M_{0,j-1}+\log a_{MY},\; V^Y_{0,j-1}+\log a_{YY}\bigr\},
+    \quad j=2,\dots,L_Y.
+\end{align*}
+
+For $1\le i\le L_X$, $1\le j\le L_Y$:
+\begin{align*}
+    V^M_{i,j}
+     & = \log e_M(x_i,y_j)
+    + \max\bigl\{
+    V^M_{i-1,j-1}+\log a_{MM},\;
+    V^X_{i-1,j-1}+\log a_{XM},\;
+    V^Y_{i-1,j-1}+\log a_{YM}
+    \bigr\},               \\
+    V^X_{i,j}
+     & = \log e_X(x_i)
+    + \max\bigl\{
+    V^M_{i-1,j}+\log a_{MX},\;
+    V^X_{i-1,j}+\log a_{XX}
+    \bigr\},               \\
+    V^Y_{i,j}
+     & = \log e_Y(y_j)
+    + \max\bigl\{
+    V^M_{i,j-1}+\log a_{MY},\;
+    V^Y_{i,j-1}+\log a_{YY}
+    \bigr\}.
+\end{align*}
+
+\subsubsection{Termination and traceback}
+
+At $(L_X,L_Y)$ we add end probabilities:
+\[
+    \ell^\star = \max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr),
+\]
+with optimal final state
+\[
+    s^\star = \arg\max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr).
+\]
+We store backpointers during the DP and trace back from $(L_X,L_Y,s^\star)$ to $(0,0)$, then reverse the sequence of moves to recover the optimal alignment.
+
+\subsection{Maximum expected accuracy (MEA) alignment}
+
+We also compute an alignment that maximizes the expected number of correctly aligned nucleotide pairs under the posterior over paths.
+
+\subsubsection{Posterior match probabilities}
+
+For $1\le i\le L_X$, $1\le j\le L_Y$, let $M_{ij}=1$ if $x_i$ is aligned to $y_j$ in state $M$ along some path, and define
+\[
+    P_{ij} = P(M_{ij}=1\mid X,Y).
+\]
+Using forward and backward probabilities restricted to the match state,
+\[
+    P_{ij} = \frac{\alpha_M(i,j)\,\beta_M(i,j)}{P(X,Y)},
+\]
+where $\alpha_M(i,j)$ is the forward probability of being in $M$ aligning $(x_i,y_j)$, $\beta_M(i,j)$ is the corresponding backward probability, and $P(X,Y)$ is the marginal likelihood. We arrange $P_{ij}$ in a matrix $P\in[0,1]^{(L_X+1)\times(L_Y+1)}$ with $P[0,\cdot]=P[\cdot,0]=0$.
+
+\subsubsection{Objective and weighting}
+
+An alignment $A$ is a set of index pairs
+$A \subseteq \{1,\dots,L_X\}\times\{1,\dots,L_Y\}$,
+where $(i,j)\in A$ iff $x_i$ is aligned to $y_j$. Its expected accuracy is
+\[
+    \mathbb{E}[\mathrm{acc}(A)\mid X,Y]
+    = \sum_{(i,j)\in A} P_{ij}.
+\]
+We introduce weights $w_{ij}=f(P_{ij};\gamma)$ and maximize
+\[
+    A^\star = \arg\max_A \sum_{(i,j)\in A} w_{ij}.
+\]
+Examples of $f$ include:
+\begin{itemize}
+    \item Power ($\gamma>0$): $w_{ij}=P_{ij}^{\gamma}$,
+    \item Threshold ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-(1-\gamma)$,
+    \item ProbCons-style ($\gamma>0.5$): $w_{ij}=2\gamma P_{ij}-1$,
+    \item Log-odds ($\gamma\in(0,1)$):
+          \[
+              w_{ij} = \log\frac{P_{ij}}{1-P_{ij}} + \log\frac{\gamma}{1-\gamma}.
+          \]
+\end{itemize}
+Let $W$ be the matrix with entries $W[i,j]=w_{ij}$ and $W[0,\cdot]=W[\cdot,0]=0$.
+
+\subsubsection{Dynamic programming and reconstruction}
+
+We view MEA alignment as a maximum-weight path on the grid
+$\{0,\dots,L_X\}\times\{0,\dots,L_Y\}$:
+diagonal steps align $(x_i,y_j)$ with weight $W[i,j]$, and horizontal/vertical steps are gaps with weight $0$.
+
+Let $D(i,j)$ be the maximum total weight for prefixes $x_{1:i},y_{1:j}$, with
+\[
+    D(0,0)=0,\qquad D(i,0)=0,\qquad D(0,j)=0.
+\]
+For $1\le i\le L_X$, $1\le j\le L_Y$,
+\[
+    D(i,j) = \max\bigl\{
+    D(i-1,j-1)+W[i,j],\;
+    D(i-1,j),\;
+    D(i,j-1)
+    \bigr\}.
+\]
+The MEA score is $D(L_X,L_Y)$. Storing the maximizing move (diagonal/up/left) at each cell and tracing back from $(L_X,L_Y)$ to $(0,0)$ yields the MEA alignment.
 
 %====================================
 % Results (Experiments)
