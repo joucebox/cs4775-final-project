@@ -261,41 +261,43 @@ $$
 - Gap open probability: δ = P(M→X) + P(M→Y)
 - Gap extend probability: ε = (P(X→X) + P(Y→Y)) / 2
 
-### 2.3 Forward-Backward Algorithm
+### 2.3 Forward–Backward Inference (Pair HMM)
 
-#### 2.3.1 Purpose
+We use log-space DP on the grid $0 \le i \le L_X,\; 0 \le j \le L_Y$ with tables $F_s(i,j), B_s(i,j)$ for $s \in \{M,X,Y\}$, where $(i,j)$ encodes consumed prefixes. Log parameters $\log \pi(s), \log a_{uv}, \log \rho(s), \log e_s(\cdot)$ follow Section 2.1.3. The log-sum-exp operator
 
-- Compute posterior probability of being in match state at position (i, j)
-- P(M at (i,j) | x, y) = P(M_ij, x, y) / P(x, y)
+$$
+\operatorname{LSE}(v_1,\dots,v_k) = \log\Big(\sum_{m=1}^k e^{v_m}\Big)
+$$
 
-#### 2.3.2 Forward Algorithm
+accumulates probabilities stably in log-space (avoids underflow/overflow).
 
-- F_M[i][j]: log probability of emitting x[1:i], y[1:j] and ending in state M
-- F_X[i][j]: log probability of emitting x[1:i], y[1:j] and ending in state X
-- F_Y[i][j]: log probability of emitting x[1:i], y[1:j] and ending in state Y
-- Initialization from start distribution
-- Recurrence using logsumexp for numerical stability:
-  ```
-  F_M[i][j] = logsumexp(F_M[i-1][j-1] + log_trans(M,M),
-                        F_X[i-1][j-1] + log_trans(X,M),
-                        F_Y[i-1][j-1] + log_trans(Y,M)) + log_emit_M(x[i], y[j])
-  ```
+#### 2.3.1 Forward
 
-#### 2.3.3 Backward Algorithm
+- Init all $F_s=-\infty$; set initial emissions (if present):
+  - $F_X(1,0)=\log\pi(X)+\log e_X(x_1)$ if $L_X>0$
+  - $F_Y(0,1)=\log\pi(Y)+\log e_Y(y_1)$ if $L_Y>0$
+  - $F_M(1,1)=\log\pi(M)+\log e_M(x_1,y_1)$ if $L_X,L_Y>0$
+- Recurrences (omit impossible moves; enforce $a_{XY}=a_{YX}=0$):
+  - $F_M(i,j)=\operatorname{LSE}(F_M(i\!-\!1,j\!-\!1)+\log a_{MM}, F_X(i\!-\!1,j\!-\!1)+\log a_{XM}, F_Y(i\!-\!1,j\!-\!1)+\log a_{YM}) + \log e_M(x_i,y_j)$
+  - $F_X(i,j)=\operatorname{LSE}(F_M(i\!-\!1,j)+\log a_{MX}, F_X(i\!-\!1,j)+\log a_{XX}) + \log e_X(x_i)$
+  - $F_Y(i,j)=\operatorname{LSE}(F_M(i,j\!-\!1)+\log a_{MY}, F_Y(i,j\!-\!1)+\log a_{YY}) + \log e_Y(y_j)$
+- Termination:
+  $\log Z_f = \operatorname{LSE}(F_M(L_X,L_Y)+\log\rho(M), F_X(L_X,L_Y)+\log\rho(X), F_Y(L_X,L_Y)+\log\rho(Y))$.
 
-- B_M[i][j]: log probability of emitting x[i+1:n], y[j+1:m] starting from state M
-- Initialize at terminal position (n, m) with end probabilities
-- Reverse iteration through the DP grid
-- Recurrence symmetric to forward
+#### 2.3.2 Backward
 
-#### 2.3.4 Posterior Computation
+- Init all $B_s=-\infty$; at $(L_X,L_Y)$ set $B_M=\log\rho(M),\;B_X=\log\rho(X),\;B_Y=\log\rho(Y)$.
+- Recurrences (include term only if in-bounds):
+  - From $M$: $\operatorname{LSE}\{$
+    $1_{i<L_X,j<L_Y}[\log a_{MM}+\log e_M(x_{i+1},y_{j+1})+B_M(i+1,j+1)],$
+    $1_{i<L_X}[\log a_{MX}+\log e_X(x_{i+1})+B_X(i+1,j)],$
+    $1_{j<L_Y}[\log a_{MY}+\log e_Y(y_{j+1})+B_Y(i,j+1)]\}$
+  - From $X$: similar with $\log a_{XM}, a_{XX}, a_{XY}$ (and $a_{XY}=0$)
+  - From $Y$: similar with $\log a_{YM}, a_{YX}, a_{YY}$ (and $a_{YX}=0$)
+- Termination:
+  $\log Z_b = \operatorname{LSE}(\log\pi(M)+\log e_M(x_1,y_1)+B_M(1,1),\; \log\pi(X)+\log e_X(x_1)+B_X(1,0),\; \log\pi(Y)+\log e_Y(y_1)+B_Y(0,1))$.
 
-- Log partition function: logZ = logsumexp over terminal states
-- Posterior match probability:
-  ```
-  P(M at i,j | x, y) = exp(F_M[i][j] + B_M[i][j] - logZ)
-  ```
-- Verify: logZ_forward ≈ logZ_backward (sanity check)
+Consistency: $\log Z_f \approx \log Z_b \approx \log P(X,Y)$; use $\log Z = \tfrac12(\log Z_f+\log Z_b)$ for posterior-based objectives (e.g., MEA weights).
 
 ### 2.4 Viterbi Decoding (MAP Alignment)
 
