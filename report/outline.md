@@ -86,25 +86,153 @@ Beyond Viterbi: A Maximum Expected Accuracy Approach to Pairwise Alignment
 
 ### 2.1 Pair Hidden Markov Model
 
-#### 2.1.1 Model Architecture
+We model the joint generation of a pair of RNA sequences,
 
-- Three-state model: M (match/mismatch), X (insert in X), Y (insert in Y)
-- State M: consumes one symbol from sequence x and one from y
-- State X: consumes one symbol from x only (gap in y)
-- State Y: consumes one symbol from y only (gap in x)
+$$
+X = x_1, \dots, x_{L_X} \;\;\text{and}\;\; Y = y_1, \dots, y_{L_Y},
+$$
 
-#### 2.1.2 Emission Probabilities
+where each symbol is drawn from the RNA alphabet
 
-- Match state: P(x_i, y_j | M) - joint emission of base pair
-- Insert X state: P(x_i | X) - marginal emission in x
-- Insert Y state: P(y_j | Y) - marginal emission in y
-- RNA alphabet: {A, C, G, U}
+$$
+\mathcal{A} = \{A, C, G, U\}.
+$$
 
-#### 2.1.3 Transition Probabilities
+The alignment of the two sequences is represented by a sequence of hidden states
 
-- 3×3 transition matrix between states {M, X, Y}
-- Affine gap model: gap open (δ) and gap extend (ε)
-- Constraint: P(X→Y) = P(Y→X) = 0 (no direct transitions between insert states)
+$$
+Z = (z_1, \dots, z_T), \quad z_t \in \mathcal{S},
+$$
+
+where the state space is fixed to
+
+$$
+\mathcal{S} = \{ M, X, Y \}.
+$$
+
+Here, $M$ denotes a match (or substitution) state, $X$ an insertion in the first sequence (gap in $Y$), and $Y$ an insertion in the second sequence (gap in $X$).
+
+We associate to each time step $t$ a pair of indices $(i_t, j_t)$ indicating how many characters of $X$ and $Y$ have been consumed up to that step. The state $z_t$ determines which symbols are emitted and how the indices are advanced:
+
+- If $z_t = M$, the model emits a pair $(x_{i_t+1}, y_{j_t+1})$ and advances both indices:
+
+  $$
+  (i_{t+1}, j_{t+1}) = (i_t + 1, j_t + 1)
+  $$
+
+- If $z_t = X$, the model emits a single symbol $x_{i_t+1}$ and advances only the first sequence:
+
+  $$
+  (i_{t+1}, j_{t+1}) = (i_t + 1, j_t)
+  $$
+
+- If $z_t = Y$, the model emits a single symbol $y_{j_t+1}$ and advances only the second sequence:
+  $$
+  (i_{t+1}, j_{t+1}) = (i_t, j_t + 1)
+  $$
+
+A path $Z$ is considered valid if, after $T$ steps, all characters of both sequences have been consumed:
+
+$$
+(i_T, j_T) = (L_X, L_Y).
+$$
+
+#### 2.1.1 Emission Model
+
+The emission probabilities are defined for each state:
+
+- **Match state ($M$).** When $z_t = M$, emit a pair of bases $(x, y) \in \mathcal{A} \times \mathcal{A}$ according to
+
+  $$
+  e_M(x, y) = P(\text{emit } (x, y) \mid z_t = M),
+  $$
+
+  with normalization: $\sum_{x \in \mathcal{A}} \sum_{y \in \mathcal{A}} e_M(x, y) = 1$.
+
+- **Insertion in $X$ (state $X$).** When $z_t = X$, emit base $x \in \mathcal{A}$ from $X$ with
+
+  $$
+  e_X(x) = P(\text{emit } x \mid z_t = X),
+  $$
+
+  where $\sum_{x \in \mathcal{A}} e_X(x) = 1$.
+
+- **Insertion in $Y$ (state $Y$).** When $z_t = Y$, emit base $y \in \mathcal{A}$ from $Y$ with
+  $$
+  e_Y(y) = P(\text{emit } y \mid z_t = Y),
+  $$
+  and $\sum_{y \in \mathcal{A}} e_Y(y) = 1$.
+
+We can write a unified emission function:
+
+$$
+e_{z_t}(\cdot) =
+\begin{cases}
+e_M(x_{i_t+1}, y_{j_t+1}) & \text{if } z_t = M, \\[4pt]
+e_X(x_{i_t+1})            & \text{if } z_t = X, \\[4pt]
+e_Y(y_{j_t+1})            & \text{if } z_t = Y.
+\end{cases}
+$$
+
+#### 2.1.2 Start, Transition, and End Distributions
+
+The HMM parameters include:
+
+- **Start distribution**:
+
+  $$
+  \pi(s) = P(z_1 = s), \quad s \in \{M, X, Y\}
+  $$
+
+  which defaults to the uniform distribution $\pi(M) = \pi(X) = \pi(Y) = \tfrac{1}{3}$, unless otherwise specified.
+
+- **State transition matrix**:
+
+  $$
+  a_{uv} = P(z_{t+1} = v \mid z_t = u), \quad u, v \in \{M, X, Y\}
+  $$
+
+  with normalization $\sum_{v} a_{uv} = 1$ for all $u$.
+
+  - _Affine gap penalty:_ The matrix structure supports distinguishing gap opening ($\delta$) and gap extension ($\epsilon$) probabilities.
+  - _Constraint:_ $a_{XY} = a_{YX} = 0$ (no direct transitions between insert states).
+
+- **End distribution**:
+  $$
+  \rho(s) = P(\text{end} \mid z_T = s), \quad s \in \{M, X, Y\}
+  $$
+
+#### 2.1.3 Joint Probability and Log-Space Parameterization
+
+For any valid alignment path $Z = (z_1, \ldots, z_T)$, the **joint probability** is:
+
+$$
+P(X, Y, Z) = \pi(z_1) \left[ \prod_{t=1}^{T-1} a_{z_t z_{t+1}} \right] \left[ \prod_{t=1}^{T} e_{z_t}(\text{symbols emitted at } t) \right] \rho(z_T)
+$$
+
+The **marginal sequence likelihood** sums over all valid alignment paths:
+
+$$
+P(X, Y) = \sum_{Z \in \mathcal{Z}(X,Y)} P(X, Y, Z)
+$$
+
+where $\mathcal{Z}(X,Y)$ is the set of all alignment paths consuming both sequences.
+
+**Log-space implementation.**  
+For numerical stability, all probabilities are represented in log-space:
+
+- $\log \pi(s)$, $\log a_{uv}$, $\log \rho(s)$,
+- $\log e_M(x,y)$, $\log e_X(x)$, $\log e_Y(y)$,
+
+The log-joint decomposes as:
+
+$$
+\log P(X, Y, Z)
+= \log \pi(z_1)
++ \sum_{t=1}^{T-1} \log a_{z_t z_{t+1}}
++ \sum_{t=1}^{T} \log e_{z_t}(\text{symbols emitted at } t)
++ \log \rho(z_T).
+$$
 
 ### 2.2 Parameter Estimation (MLE)
 
