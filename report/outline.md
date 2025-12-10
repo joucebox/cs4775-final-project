@@ -234,32 +234,66 @@ $$
 + \log \rho(z_T).
 $$
 
-### 2.2 Parameter Estimation (MLE)
+### 2.2 Parameter Estimation from Aligned Sequences
 
-#### 2.2.1 Data Source
+We estimate pair-HMM parameters from the gold-standard alignments by counting events and normalizing with optional pseudocounts. Let $\mathcal{A}=\{A,C,G,U\}$ and $\mathcal{S}=\{M,X,Y\}$. Each alignment yields aligned strings $\tilde X, \tilde Y \in (\mathcal{A}\cup\{-\})^L$ for a pair of sequences.
 
-- Rfam database: curated RNA family alignments
-- 368 pairwise Stockholm alignments extracted from multiple sequence alignments
+#### 2.2.1 Column-wise state labelling
 
-#### 2.2.2 Count Accumulation
+For each column $\ell$, assign
 
-- Iterate through aligned columns to count:
-  - Match emissions: count(x_i, y_j | state = M)
-  - Insert X emissions: count(x_i | state = X)
-  - Insert Y emissions: count(y_j | state = Y)
-  - State transitions: count(state*t → state*{t+1})
+$$
+s_\ell = \begin{cases}
+M & \tilde x_\ell\in\mathcal{A},\ \tilde y_\ell\in\mathcal{A}\\
+X & \tilde x_\ell\in\mathcal{A},\ \tilde y_\ell = -\\
+Y & \tilde x_\ell = -, \ \tilde y_\ell\in\mathcal{A}\\
+\varnothing & \text{otherwise (e.g. both gaps)}
+\end{cases}
+$$
 
-#### 2.2.3 Normalization with Pseudocounts
+Columns with $s_\ell=\varnothing$ are ignored for emissions/transitions; transitions do not cross them (state resets).
 
-- Additive smoothing (pseudocount α = 0.5) to avoid zero probabilities
-- Normalize counts to probabilities:
-  - P(x, y | M) = (count(x, y) + α) / Σ(count + α)
-- Convert to log-space for numerical stability
+#### 2.2.2 Sufficient statistics
 
-#### 2.2.4 Gap Parameters
+- Match emissions: $c_M(a,b)=\#\{\ell: s_\ell=M,\ \tilde x_\ell=a,\ \tilde y_\ell=b\}$.
+- Insert X: $c_X(a)=\#\{\ell: s_\ell=X,\ \tilde x_\ell=a\}$.
+- Insert Y: $c_Y(b)=\#\{\ell: s_\ell=Y,\ \tilde y_\ell=b\}$.
+- Transitions: $c_{\text{tr}}(u,v)=\#\{\ell: s_\ell=u,\ s_{\ell+1}=v,\ u,v\in\mathcal{S}\}$ (skip if $s_\ell=\varnothing$).
 
-- Gap open probability: δ = P(M→X) + P(M→Y)
-- Gap extend probability: ε = (P(X→X) + P(Y→Y)) / 2
+#### 2.2.3 Emissions (with pseudocount $\eta\ge0$)
+
+Let $T_M(a)=\sum_b (c_M(a,b)+\eta)$. Then
+
+$$
+e_M(a,b)=
+\begin{cases}
+\dfrac{c_M(a,b)+\eta}{T_M(a)}, & T_M(a)>0\\[6pt]
+\dfrac{1}{|\mathcal{A}|}, & T_M(a)=0
+\end{cases}
+$$
+
+Insert X: $T_X=\sum_a (c_X(a)+\eta)$, $e_X(a)=\frac{c_X(a)+\eta}{T_X}$ if $T_X>0$, else $1/|\mathcal{A}|$.  
+Insert Y: $T_Y=\sum_b (c_Y(b)+\eta)$, $e_Y(b)=\frac{c_Y(b)+\eta}{T_Y}$ if $T_Y>0$, else $1/|\mathcal{A}|$.  
+Implementation stores $\log e_M, \log e_X, \log e_Y$; zeros become $-\infty$.
+
+#### 2.2.4 Transitions and affine-gap parameters
+
+Raw (pseudocounted) rows:
+
+$$
+\tilde a_{uv} = \begin{cases}
+0, & (u,v)\in\{(X,Y),(Y,X)\}\\[4pt]
+\dfrac{c_{\text{tr}}(u,v)+\eta}{\sum_w (c_{\text{tr}}(u,w)+\eta)}, & \text{if denom}>0\\[6pt]
+0, & \text{otherwise}
+\end{cases}
+$$
+
+Row renorm over allowed $v$ (exclude $X\to Y$, $Y\to X$): $a_{uv}=\tilde a_{uv}/S_u$ if $S_u>0$ and allowed, else $0$. Store $\log a_{uv}$, with $-\infty$ for zeros.
+
+Affine-gap summary:
+$\delta = a_{MX}+a_{MY}$ (gap open), $\epsilon_X=a_{XX}$, $\epsilon_Y=a_{YY}$, $\epsilon=(\epsilon_X+\epsilon_Y)/2$.
+
+---
 
 ### 2.3 Forward–Backward Inference (Pair HMM)
 
