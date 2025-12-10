@@ -297,37 +297,126 @@ $$
   ```
 - Verify: logZ_forward ≈ logZ_backward (sanity check)
 
-### 2.4 Viterbi Algorithm
+### 2.4 Viterbi Decoding (MAP Alignment)
 
-#### 2.4.1 Purpose
+#### 2.4.1 Objective
 
-- Find the single most probable alignment path (MAP estimate)
-- Maximize P(path, x, y) over all possible state sequences
+Given the pair HMM of Section 2.1, the maximum a posteriori (MAP) alignment is
 
-#### 2.4.2 Dynamic Programming
+$$
+Z^* = \arg\max_{Z \in \mathcal{Z}(X,Y)} P(X, Y, Z)
+    = \arg\max_{Z \in \mathcal{Z}(X,Y)} \log P(X, Y, Z),
+$$
 
-- V_M[i][j]: log probability of best path ending at (i,j) in state M
-- V_X[i][j]: log probability of best path ending at (i,j) in state X
-- V_Y[i][j]: log probability of best path ending at (i,j) in state Y
-- Recurrence using max instead of logsumexp:
-  ```
-  V_M[i][j] = max(V_M[i-1][j-1] + log_trans(M,M),
-                  V_X[i-1][j-1] + log_trans(X,M),
-                  V_Y[i-1][j-1] + log_trans(Y,M)) + log_emit_M(x[i], y[j])
-  ```
+where $\mathcal{Z}(X,Y)$ is the set of all valid alignment paths. We perform this maximization via dynamic programming in log-space.
 
-#### 2.4.3 Backpointer Tracking
+#### 2.4.2 Dynamic Programming Variables
 
-- Ψ_M[i][j], Ψ_X[i][j], Ψ_Y[i][j]: store which state gave the max
-- Used for traceback to reconstruct optimal alignment
+For $0 \le i \le L_X$ and $0 \le j \le L_Y$, define
 
-#### 2.4.4 Traceback
+$$
+V^s_{i,j}
+=
+\max_{Z: (i_T,j_T)=(i,j),\,z_T = s}
+\log P\bigl(X_{1:i}, Y_{1:j}, Z\bigr),
+\qquad s \in \{M,X,Y\},
+$$
 
-- Start at terminal state with highest score at (n, m)
-- Follow backpointers to recover alignment:
-  - M → emit aligned pair (x[i], y[j])
-  - X → emit (x[i], gap)
-  - Y → emit (gap, y[j])
+with the convention $V^s_{i,j} = -\infty$ if no such path exists. We work entirely in log-space:
+$\log \pi(s)$, $\log a_{uv}$, $\log \rho(s)$, $\log e_M(x,y)$, $\log e_X(x)$, $\log e_Y(y)$.
+
+#### 2.4.3 Initialization
+
+Anchor at empty prefixes $(0,0)$: $V^M_{0,0} = V^X_{0,0} = V^Y_{0,0} = -\infty$.
+
+First non-empty cells:
+
+- $V^X_{1,0} = \log \pi(X) + \log e_X(x_1)$
+- $V^Y_{0,1} = \log \pi(Y) + \log e_Y(y_1)$
+- $V^M_{1,1} = \log \pi(M) + \log e_M(x_1, y_1)$
+
+Leading gaps via gap-extension transitions:
+
+- First column ($j=0$, gaps in $Y$), $i = 2,\dots,L_X$:
+  $$
+  V^X_{i,0}
+  =
+  \log e_X(x_i)
+  +
+  \max\{ V^M_{i-1,0} + \log a_{MX},\; V^X_{i-1,0} + \log a_{XX} \}.
+  $$
+- First row ($i=0$, gaps in $X$), $j = 2,\dots,L_Y$:
+  $$
+  V^Y_{0,j}
+  =
+  \log e_Y(y_j)
+  +
+  \max\{ V^M_{0,j-1} + \log a_{MY},\; V^Y_{0,j-1} + \log a_{YY} \}.
+  $$
+
+Unreachable cells remain $-\infty$.
+
+#### 2.4.4 Recurrence Relations
+
+For $1 \le i \le L_X$, $1 \le j \le L_Y$:
+
+- Match $M$ (consumes $x_i, y_j$):
+  $$
+  V^M_{i,j}
+  =
+  \log e_M(x_i, y_j)
+  +
+  \max\{
+    V^M_{i-1,j-1} + \log a_{MM},
+    V^X_{i-1,j-1} + \log a_{XM},
+    V^Y_{i-1,j-1} + \log a_{YM}
+  \}.
+  $$
+- Insert $X$ (consumes $x_i$ only):
+  $$
+  V^X_{i,j}
+  =
+  \log e_X(x_i)
+  +
+  \max\{
+    V^M_{i-1,j} + \log a_{MX},
+    V^X_{i-1,j} + \log a_{XX}
+  \}.
+  $$
+- Insert $Y$ (consumes $y_j$ only):
+  $$
+  V^Y_{i,j}
+  =
+  \log e_Y(y_j)
+  +
+  \max\{
+    V^M_{i,j-1} + \log a_{MY},
+    V^Y_{i,j-1} + \log a_{YY}
+  \}.
+  $$
+
+#### 2.4.5 Termination and MAP Score
+
+At $(L_X, L_Y)$, incorporate end probabilities:
+
+$$
+\ell^* = \max_{s \in \{M,X,Y\}} \big( V^s_{L_X,L_Y} + \log \rho(s) \big),
+$$
+
+with best final state
+$s^* = \arg\max_{s \in \{M,X,Y\}} \big( V^s_{L_X,L_Y} + \log \rho(s) \big)$.
+The Viterbi log-score of the optimal alignment is $\ell^*$.
+
+#### 2.4.6 Traceback
+
+Maintain backpointers $\Psi^M_{i,j}, \Psi^X_{i,j}, \Psi^Y_{i,j} \in \{M,X,Y\}$ from the argmax steps.
+Starting at $(i,j,s) = (L_X,L_Y,s^*)$, iterate:
+
+- if $s = M$: emit $(x_i, y_j)$, move to $(i-1, j-1, \Psi^M_{i,j})$
+- if $s = X$: emit $(x_i, -)$, move to $(i-1, j, \Psi^X_{i,j})$
+- if $s = Y$: emit $(-, y_j)$, move to $(i, j-1, \Psi^Y_{i,j})$
+
+until $(0,0)$; reverse to obtain the Viterbi (MAP) alignment. Complexity: $O(L_X L_Y)$ time and space.
 
 ### 2.5 Maximum Expected Accuracy (MEA) Algorithm
 
