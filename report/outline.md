@@ -409,46 +409,78 @@ The Viterbi log-score of the optimal alignment is $\ell^*$.
 
 #### 2.4.6 Traceback
 
-Maintain backpointers $\Psi^M_{i,j}, \Psi^X_{i,j}, \Psi^Y_{i,j} \in \{M,X,Y\}$ from the argmax steps.
-Starting at $(i,j,s) = (L_X,L_Y,s^*)$, iterate:
+Traceback is performed by following the backpointers from $(L_X, L_Y, s^*)$, emitting aligned pairs and moving to the previous cell according to the current state, until reaching $(0, 0)$. The resulting sequence is then reversed to yield the optimal alignment.
 
-- if $s = M$: emit $(x_i, y_j)$, move to $(i-1, j-1, \Psi^M_{i,j})$
-- if $s = X$: emit $(x_i, -)$, move to $(i-1, j, \Psi^X_{i,j})$
-- if $s = Y$: emit $(-, y_j)$, move to $(i, j-1, \Psi^Y_{i,j})$
+### 2.5 Maximum Expected Accuracy (MEA) Alignment
 
-until $(0,0)$; reverse to obtain the Viterbi (MAP) alignment. Complexity: $O(L_X L_Y)$ time and space.
+Given the pair HMM in Section 2.1, we seek an alignment that maximizes the expected number of correctly aligned nucleotide pairs under the posterior distribution over alignment paths.
 
-### 2.5 Maximum Expected Accuracy (MEA) Algorithm
+#### 2.5.1 Posterior match probabilities
 
-#### 2.5.1 Motivation
+Let $L_X$ and $L_Y$ be the lengths of sequences $X$ and $Y$, respectively. For each pair of positions $(i,j)$, with $1 \le i \le L_X$, $1 \le j \le L_Y$, define the event
 
-- Viterbi optimizes for the single best path
-- MEA optimizes for expected number of correctly aligned positions
-- Incorporates alignment uncertainty via posteriors
+$$
+M_{ij} = 1 \;\Longleftrightarrow\; x_i \text{ is aligned to } y_j \text{ in state } M \text{ along some valid path } Z.
+$$
 
-#### 2.5.2 Gamma Parameter
+The posterior match probability is
 
-- Weight matrix: w[i][j] = P(M at i,j | x, y)^γ
-- Interpretation:
-  - γ = 1: use raw posterior probabilities
-  - γ > 1: accentuate high-confidence matches (higher precision)
-  - γ < 1: flatten differences (higher recall)
+$$
+P_{ij} \equiv P(M_{ij} = 1 \mid X, Y).
+$$
 
-#### 2.5.3 MEA Dynamic Programming
+Using the forward–backward recursions of the pair HMM, let
 
-- DP[i][j]: maximum expected accuracy for aligning x[1:i] with y[1:j]
-- Recurrence:
-  ```
-  DP[i][j] = max(DP[i-1][j-1] + w[i][j],   # align x[i] with y[j]
-                 DP[i-1][j],                # gap in y
-                 DP[i][j-1])                # gap in x
-  ```
-- No gap penalty: accuracy score comes entirely from posterior weights
+- $\alpha_M(i,j)$: forward probability of generating prefixes $x_{1:i}, y_{1:j}$ and being in state $M$ that aligns $(x_i, y_j)$,
+- $\beta_M(i,j)$: backward probability of generating suffixes $x_{i+1:L_X}, y_{j+1:L_Y}$ from state $M$ at $(i,j)$,
+  and let $P(X,Y) = \sum_{Z} P(X,Y,Z)$ be the marginal likelihood. Then
+  $$
+  P_{ij} = \frac{\alpha_M(i,j)\,\beta_M(i,j)}{P(X,Y)}.
+  $$
+  Collect these into $P \in [0,1]^{(L_X+1)\times(L_Y+1)}$ with $P[0,\cdot]=P[\cdot,0]=0$.
 
-#### 2.5.4 Traceback
+#### 2.5.2 MEA objective and weighting schemes
 
-- Standard alignment traceback using pointer matrix
-- Score represents expected number of correctly aligned positions
+An alignment $A$ is the set of aligned index pairs $A \subseteq \{1,\dots,L_X\}\times\{1,\dots,L_Y\}$ where $(i,j)\in A$ iff $x_i$ is aligned to $y_j$. Its expected accuracy is
+
+$$
+\mathbb{E}[\text{acc}(A) \mid X,Y] = \sum_{(i,j)\in A} P_{ij}.
+$$
+
+We generalize with weights $w_{ij} = f(P_{ij};\gamma)$ and maximize
+
+$$
+A^\star = \arg\max_{A} \sum_{(i,j)\in A} w_{ij}.
+$$
+
+Weighting choices:
+
+1. **Power** ($\gamma>0$): $w_{ij}=P_{ij}^{\gamma}$
+2. **Threshold** ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-(1-\gamma)$
+3. **ProbCons-style** ($\gamma>0.5$): $w_{ij}=2\gamma P_{ij}-1$
+4. **Log-odds** ($\gamma\in(0,1)$): $w_{ij}=\log\frac{P_{ij}}{1-P_{ij}} + \log\frac{\gamma}{1-\gamma}$  
+   Let $W$ be the weight matrix with $W[0,\cdot]=W[\cdot,0]=0$.
+
+#### 2.5.3 Dynamic programming formulation
+
+View MEA as a maximum-weight path on the grid $\{0,\dots,L_X\}\times\{0,\dots,L_Y\}$:
+
+- Diagonal $(i-1,j-1)\to(i,j)$ aligns $(x_i,y_j)$ with weight $W[i,j]$.
+- Horizontal/vertical steps are gaps with zero weight (no explicit gap penalties).
+
+Define $D(i,j)$ as the maximum total weight for prefixes $x_{1:i}, y_{1:j}$.
+Boundary: $D(0,0)=0,\; D(i,0)=0,\; D(0,j)=0$.
+For $1 \le i \le L_X,\; 1 \le j \le L_Y$:
+
+$$
+D(i,j) = \max\{ D(i-1,j-1)+W[i,j],\; D(i-1,j),\; D(i,j-1) \}.
+$$
+
+MEA score: $\text{MEA}(X,Y)=D(L_X,L_Y)$.
+
+#### 2.5.4 Traceback and alignment reconstruction
+
+Store the maximizing move (diag/up/left) at each $(i,j)$. Trace back from $(L_X,L_Y)$ to $(0,0)$ to produce the MEA alignment under the pair HMM.
 
 ---
 
