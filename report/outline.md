@@ -77,7 +77,7 @@ Beyond Viterbi: A Maximum Expected Accuracy Approach to Pairwise Alignment
 ### 1.4 Contributions
 
 - Complete Python implementation of pair HMM algorithms
-- Analysis of performance on 368 Rfam pairwise alignments against golden labels
+- Analysis of performance on 547 Rfam pairwise alignments against golden labels
 - Analysis of gamma parameter effect on alignment accuracy
 
 ---
@@ -524,7 +524,7 @@ Store the maximizing move (diag/up/left) at each $(i,j)$. Trace back from $(L_X,
 
 ### 3.1 Experimental Setup
 
-- Dataset: 368 Rfam pairwise alignments as gold standard
+- Dataset: 547 Rfam pairwise alignments as gold standard
 - Gamma values tested: 0.01, 0.1, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0
 - Metrics: Precision, Recall, F1 score, Column identity
 
