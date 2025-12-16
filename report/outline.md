@@ -528,31 +528,26 @@ Store the maximizing move (diag/up/left) at each $(i,j)$. Trace back from $(L_X,
 - Gamma values tested: 0.01, 0.1, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0
 - Metrics: Precision, Recall, F1 score, Column identity
 
-### 3.2 Synthetic Data (if applicable)
+### 3.2 Real Data
 
-- Controlled experiments with known ground truth
-- Parameter recovery analysis
-
-### 3.3 Real Data
-
-#### 3.3.1 MEA vs Viterbi Comparison
+#### 3.2.1 MEA vs Viterbi Comparison
 
 - F1 scores across gamma values
 - Delta F1 (MEA - Viterbi) analysis
 - Precision-recall tradeoff curves
 
-#### 3.3.2 Posterior Analysis
+#### 3.2.2 Posterior Analysis
 
 - Posterior mass captured by MEA vs Viterbi alignments
 - Per-family performance breakdown
 - Efficiency scatter plots (posterior mass per aligned pair)
 
-#### 3.3.3 Column Identity Analysis
+#### 3.2.3 Column Identity Analysis
 
 - Fraction of exactly matching columns
 - Impact of gamma on alignment stringency
 
-### 3.4 Visualization
+### 3.3 Visualization
 
 - Posterior heatmaps with alignment overlays
 - MEA vs Viterbi comparison plots
