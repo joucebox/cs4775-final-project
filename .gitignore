@@ -5,3 +5,4 @@ __tmp__/
 data/all_sequences.fa
 .DS_Store
 .cache/
+report/markdown.md
