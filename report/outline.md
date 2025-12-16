@@ -14,8 +14,8 @@ Beyond Viterbi: A Maximum Expected Accuracy Approach to Pairwise Alignment
 
 1. Lawrence Granda - Computer Science, Junior, lg626
 2. Joyce Shen - Computer Science, Junior, js3696
-3. Soham Goswami - [Major], [Year], sbg226
-4. Joshua Ochalek - [Major], [Year], jo447
+3. Soham Goswami - Computer Science, Sophomore, sbg226
+4. Joshua Ochalek - Computer Science and Italian, Junior, jo447
 
 ### Abstract (200 words minimum)
 
