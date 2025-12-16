@@ -90,7 +90,31 @@ Pairwise sequence alignment, Hidden Markov Model (HMM), Maximum Expected Accurac
 % Introduction 
 %====================================
 \section{Introduction}
-\lipsum[1] % place holder, delete
+
+\subsection{Background and Motivation}
+
+Pairwise sequence alignment is a fundamental task in computational biology, essential for understanding evolutionary relationships, identifying functional domains, and annotating genomic sequences. For RNA molecules, accurate alignment is particularly important as it enables the identification of conserved structural elements and functional motifs that may not be apparent from primary sequence alone. Traditional alignment methods rely on scoring matrices and gap penalties, but these approaches often fail to capture the complex dependencies and uncertainties inherent in biological sequence comparison.
+
+\subsection{Problem Statement}
+
+The Viterbi algorithm, widely used in Hidden Markov Model (HMM) based alignment methods, finds the single most probable alignment path --- the maximum a posteriori (MAP) estimate. While computationally efficient, this approach has a fundamental limitation: it completely ignores posterior uncertainty in the alignment. In regions where multiple alignments are nearly equally probable, the Viterbi path may not reflect the true underlying biological relationship, potentially leading to incorrect functional annotations.
+
+Maximum Expected Accuracy (MEA) alignment addresses this limitation by maximizing the expected number of correctly aligned positions under the posterior distribution over all possible alignments. Rather than committing to a single path, MEA considers the probability that each position pair should be aligned, providing a more robust approach that accounts for alignment uncertainty.
+
+\subsection{Objectives}
+
+This work implements and evaluates MEA alignment for RNA sequence pairs using a three-state pair hidden Markov model. Our primary objectives are:
+
+\begin{enumerate}
+    \item Implement a complete HMM framework with parameter estimation from curated pairwise alignments
+    \item Compare Viterbi and MEA alignment quality across different posterior weighting schemes
+    \item Analyze the precision-recall tradeoffs enabled by the MEA approach
+    \item Evaluate performance on a comprehensive dataset of 547 pairwise RNA alignments from Rfam families
+\end{enumerate}
+
+\subsection{Contributions}
+
+This work provides a complete Python implementation of HMM algorithms for RNA alignment, including maximum likelihood parameter estimation, forward-backward inference, Viterbi decoding, and MEA alignment with multiple weighting schemes. We present a thorough empirical evaluation comparing alignment quality against golden standard annotations, demonstrating the benefits of accounting for posterior uncertainty in sequence alignment. Our analysis reveals how different MEA formulations provide tunable precision-recall tradeoffs.
 
 
 %====================================
@@ -213,11 +237,11 @@ For $1\le i\le L_X$, $1\le j\le L_Y$, let $M_{ij}=1$ if $x_i$ is aligned to $y_j
 \[
     P_{ij} = P(M_{ij}=1\mid X,Y).
 \]
-Using forward and backward probabilities restricted to the match state,
+Using the forward-backward algorithm (detailed in Algorithm~\ref{alg:forward_backward} of the appendix), we compute $\alpha_M(i,j)$, the forward probability of reaching position $(i,j)$ in match state $M$ while aligning $(x_i,y_j)$, and $\beta_M(i,j)$, the backward probability of completing the alignment from position $(i,j)$ in match state $M$. The posterior match probability is then
 \[
     P_{ij} = \frac{\alpha_M(i,j)\,\beta_M(i,j)}{P(X,Y)},
 \]
-where $\alpha_M(i,j)$ is the forward probability of being in $M$ aligning $(x_i,y_j)$, $\beta_M(i,j)$ is the corresponding backward probability, and $P(X,Y)$ is the marginal likelihood. We arrange $P_{ij}$ in a matrix $P\in[0,1]^{(L_X+1)\times(L_Y+1)}$ with $P[0,\cdot]=P[\cdot,0]=0$.
+where $P(X,Y)$ is the marginal likelihood of the sequences. We arrange $P_{ij}$ in a matrix $P\in[0,1]^{(L_X+1)\times(L_Y+1)}$ with $P[0,\cdot]=P[\cdot,0]=0$.
 
 \subsubsection{Objective and weighting}
 
@@ -228,19 +252,20 @@ where $(i,j)\in A$ iff $x_i$ is aligned to $y_j$. Its expected accuracy is
     \mathbb{E}[\mathrm{acc}(A)\mid X,Y]
     = \sum_{(i,j)\in A} P_{ij}.
 \]
-We introduce weights $w_{ij}=f(P_{ij};\gamma)$ and maximize
+To provide a tunable precision-recall tradeoff, we introduce a parameter $\gamma$ and use weighted posterior probabilities $w_{ij}=f(P_{ij};\gamma)$ in the objective function. We then maximize
 \[
-    A^\star = \arg\max_A \sum_{(i,j)\in A} w_{ij}.
+    A^\star = \arg\max_A \sum_{(i,j)\in A} w_{ij},
 \]
-Examples of $f$ include:
+where different choices of the weighting function $f$ and parameter $\gamma$ allow us to prioritize precision or recall. Examples of $f$ include:
 \begin{itemize}
-    \item Power ($\gamma>0$): $w_{ij}=P_{ij}^{\gamma}$,
-    \item Threshold ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-(1-\gamma)$,
-    \item ProbCons-style ($\gamma>0.5$): $w_{ij}=2\gamma P_{ij}-1$,
+    \item Power ($\gamma>0$): $w_{ij}=P_{ij}^{\gamma}$, where larger $\gamma$ emphasizes high-confidence matches
+    \item Threshold ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-(1-\gamma)$, which sets matches below threshold $\gamma$ to negative weights
+    \item ProbCons-style ($\gamma>0.5$): $w_{ij}=2\gamma P_{ij}-1$, providing linear weighting
     \item Log-odds ($\gamma\in(0,1)$):
           \[
-              w_{ij} = \log\frac{P_{ij}}{1-P_{ij}} + \log\frac{\gamma}{1-\gamma}.
+              w_{ij} = \log\frac{P_{ij}}{1-P_{ij}} + \log\frac{\gamma}{1-\gamma},
           \]
+          which transforms probabilities to log-odds space
 \end{itemize}
 Let $W$ be the matrix with entries $W[i,j]=w_{ij}$ and $W[0,\cdot]=W[\cdot,0]=0$.
 
