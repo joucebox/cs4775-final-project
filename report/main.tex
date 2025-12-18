@@ -18,6 +18,7 @@
 %====================================
 % Additional settings goes here
 %====================================
+\usepackage{float}
 
 
 
@@ -346,37 +347,36 @@ We evaluated the performance of Viterbi and MEA (across all weighting schemes) o
 
 \subsection{Overall Accuracy: F1 Score and Column Identity}
 
-The primary finding of our investigation is that MEA decoding consistently yields higher alignment accuracy than Viterbi decoding across the benchmark dataset.
+The primary finding of our investigation is that MEA decoding yields modest but consistent improvements over Viterbi decoding across a broad range of $\gamma$ values. Figure~\ref{fig:delta_f1_vs_gamma} summarizes the average change in F1 relative to the Viterbi baseline. For most weighting schemes, MEA achieves non-negative $\Delta$F1 (MEA $-$ Viterbi) across a wide operating region; however, at extremely low $\gamma$, certain schemes can over-emphasize recall and introduce lower-confidence matches, occasionally reducing F1.
 
-\textbf{[Figure: F1 Score Comparison]}
+Column-level correctness follows a similar pattern. Figure~\ref{fig:column_identity_vs_gamma} reports mean column identity as a function of $\gamma$ for each MEA variant, with the Viterbi baseline shown as a reference. At low $\gamma$, column identity can degrade for methods that encourage permissive matching, reflecting instability in uncertain regions. As $\gamma$ increases into a moderate regime, column identity typically recovers to match or slightly exceed the Viterbi baseline, indicating that posterior-guided decoding can improve alignment quality without sacrificing global structural consistency.
 
 \subsection{Precision-Recall Trade-offs and the Role of Gamma}
 
-One of the definitive advantages of the MEA framework is the ability to tune the alignment characteristics via the $\gamma$ parameter. Viterbi provides a single point estimate in the precision-recall space—take it or leave it. MEA, however, offers a curve.
-
-\textbf{[Figure: Precision, Recall, and F1 vs Gamma]} illustrates this dynamic clearly.
+A definitive advantage of the MEA framework is that it exposes a tunable precision--recall trade-off through the $\gamma$ parameter. Viterbi provides a single point estimate in precision--recall space, while MEA provides a controllable family of solutions. Figure~\ref{fig:prf_vs_gamma} shows precision, recall, and F1 as $\gamma$ varies for each weighting scheme, alongside the Viterbi baseline.
 
 \begin{itemize}
-    \item \textbf{MEA (Power):}
-    \item \textbf{MEA (Threshold):}
-    \item \textbf{MEA (LogOdds):}
-    \item \textbf{MEA (ProbCons):}
-    \item \textbf{Viterbi:} characteristics
+    \item \textbf{MEA (Power):} Power weighting produces stable behavior across $\gamma$ and typically yields small improvements while remaining close to the Viterbi operating point. Increasing $\gamma$ concentrates weight on high-confidence posterior matches, improving precision with minimal disruption to recall.
+    \item \textbf{MEA (Threshold):} Threshold weighting induces a sharper trade-off: at low thresholds (low $\gamma$), the method is more permissive (high recall but potentially lower precision), while higher thresholds filter ambiguous matches and increase precision. This scheme is useful when false positive matches are particularly costly.
+    \item \textbf{MEA (LogOdds):} Log-odds weighting acts as a strong re-scaling of posterior probabilities, often producing larger shifts in the operating point as $\gamma$ changes. In practice it can behave similarly to thresholding in that it more aggressively suppresses low-confidence posterior matches.
+    \item \textbf{MEA (ProbCons-style):} ProbCons-style linear weighting produces a smooth, robust tuning curve, often providing a favorable balance in the mid-$\gamma$ regime. Its behavior is consistent with the interpretation that it rewards posterior-supported pairs while penalizing uncertain ones.
+    \item \textbf{Viterbi:} Viterbi remains a fixed operating point: it optimizes a single MAP path under a 0/1 path loss and does not provide a mechanism to tune sensitivity vs.\ specificity.
 \end{itemize}
+
+Overall, Figure~\ref{fig:prf_vs_gamma} demonstrates that MEA decoders can be tuned to prioritize conservative, high-precision alignments (higher $\gamma$) or more sensitive alignments that capture remote homology signals (lower $\gamma$), enabling task-dependent selection.
 
 \subsection{Analysis of Alignment Uncertainty: The Viterbi Fallacy}
 
-\textbf{[Figure: RF00236 Posterior Heatmap]}
-
-To gain a qualitative understanding of \textit{why} MEA performs better, we examined the posterior probability heatmaps for specific alignments. \textbf{[Figure: RF00236 Posterior Heatmap]} presents a striking example of the ``Viterbi Fallacy.''
-
+To gain qualitative insight into \textit{why} MEA can outperform Viterbi, we examined posterior match probability heatmaps for individual alignment instances. Figure~\ref{fig:rf00236_heatmap} shows the posterior match matrix for an RF00236 example with the Viterbi (MAP) and MEA alignments overlaid. The posterior often forms a \emph{band} (a ridge of near-equally plausible matches) in ambiguous regions rather than a single unambiguous diagonal. In such cases, committing to one MAP path can produce locally brittle decisions that are not maximally supported by the posterior ensemble.
 
 \begin{itemize}
-    \item \textbf{The Viterbi Path:}
-    \item \textbf{The MEA Path:}
+    \item \textbf{The Viterbi Path:} Viterbi commits to a single trajectory through regions where the posterior mass is diffuse, which can cause it to ``snap'' to one plausible diagonal even when nearby alternatives have comparable support.
+    \item \textbf{The MEA Path:} MEA preferentially follows the posterior-supported ridge, selecting matches that are collectively supported across many near-optimal paths rather than optimizing the probability of a single path.
 \end{itemize}
 
-This behavior explains the higher precision of Threshold-MEA and the robustness of the ProbCons-style estimator. MEA effectively filters out the stochastic noise of the Viterbi path, aligning only where the ensemble of paths agrees. The analysis of posterior mass distribution further quantifies this: MEA consistently captures more total posterior probability mass than Viterbi.
+We further quantify this effect by measuring how much posterior support is captured by each decoding strategy. Figure~\ref{fig:posterior_mass} summarizes posterior mass captured versus $\gamma$, the gain in captured posterior mass (MEA $-$ Viterbi), and a partition of mass into shared vs.\ method-specific contributions. Consistent with the qualitative heatmap evidence, MEA typically captures comparable or greater posterior support than Viterbi across $\gamma$, indicating that it aligns pairs that better reflect the consensus of the posterior distribution.
+
+Finally, Figure~\ref{fig:efficiency_scatter} provides an ``alignment efficiency'' view: posterior mass per aligned pair versus the number of aligned pairs, comparing MEA and Viterbi at representative $\gamma$ values. MEA tends to allocate aligned pairs to higher-confidence posterior matches, supporting the interpretation that posterior decoding improves alignment quality by spending alignment decisions on positions where the model is more certain.
 
 
 %====================================
@@ -445,24 +445,88 @@ Ultimately, ``Beyond Viterbi'' represents a shift towards a more probabilistic, 
 \newpage
 \section*{Figures}
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig_ex.pdf}
+    \includegraphics[width=0.9 \textwidth]{figures/delta_f1_vs_gamma.png}
     \caption{
-        \textbf{Example figure (figure title).} Figure description. (A) xxxx. (B) xxxx. \lipsum[1]
+        \textbf{MEA improves F1 relative to Viterbi across a broad range of $\gamma$.}
+        Mean $\Delta$F1 (MEA $-$ Viterbi) over 547 test alignments for each MEA weighting scheme as a function of $\gamma$, with a zoomed view around the Viterbi baseline.
+        Positive values indicate that posterior-based decoding yields higher F1 than MAP decoding; extremely low $\gamma$ may reduce F1 for more permissive settings.
     }
-    \label{fig:ex}
+    \label{fig:delta_f1_vs_gamma}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/column_identity_vs_gamma.png}
+    \caption{
+        \textbf{Column identity is stable in moderate $\gamma$ regimes and can match or slightly exceed Viterbi.}
+        Mean column identity versus $\gamma$ for each MEA weighting scheme, with the Viterbi baseline shown as a dashed reference line (and a zoomed view near the baseline).
+        Low $\gamma$ settings can decrease column identity due to permissive matching in uncertain regions, while moderate $\gamma$ settings recover stable, high-quality column structure.
+    }
+    \label{fig:column_identity_vs_gamma}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/f1_precision_recall_vs_gamma.png}
+    \caption{
+        \textbf{Precision--recall trade-offs induced by $\gamma$ for each MEA weighting scheme.}
+        Precision, recall, and F1 as functions of $\gamma$ for Power, Threshold, ProbCons-style, and Log-Odds weighting.
+        Dashed horizontal lines indicate the Viterbi baseline metrics.
+        Increasing $\gamma$ generally shifts MEA toward more conservative, higher-precision alignments by emphasizing high-confidence posterior matches.
+    }
+    \label{fig:prf_vs_gamma}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/RF00236_4_0_diff_zoom.png}
+    \caption{
+        \textbf{Posterior heatmap case study (RF00236): illustrating the ``Viterbi Fallacy.''}
+        Background shows posterior match probabilities $P_{ij}$.
+        Overlaid markers show the Viterbi (MAP) alignment and the MEA alignment.
+        In ambiguous regions where posterior mass forms a band rather than a single sharp ridge, Viterbi commits to one MAP trajectory, while MEA preferentially follows the posterior-supported ridge (zoomed panels highlight local disagreements).
+    }
+    \label{fig:rf00236_heatmap}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/multi_panel.png}
+    \caption{
+        \textbf{Posterior mass analysis supports the uncertainty-aware advantage of MEA.}
+        Multi-panel summary of posterior support as a function of $\gamma$:
+        (A) mean posterior mass captured by MEA vs.\ Viterbi,
+        (B) posterior mass gain (MEA $-$ Viterbi),
+        (C) partition of captured posterior mass into shared and method-specific components,
+        and (D) distributional view of mass gain for a representative $\gamma$ setting.
+        Across typical $\gamma$ values, MEA captures comparable or greater posterior support than the single MAP path.
+    }
+    \label{fig:posterior_mass}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/efficiency_scatter.png}
+    \caption{
+        \textbf{Posterior efficiency: MEA allocates aligned pairs to higher-confidence posterior matches.}
+        Scatter plots of posterior mass per aligned pair versus number of aligned pairs for MEA and Viterbi, shown for representative $\gamma$ values.
+        MEA tends to achieve higher posterior mass per aligned pair, consistent with selecting matches that are more strongly supported by the posterior distribution.
+    }
+    \label{fig:efficiency_scatter}
 \end{figure}
 
 
 %===============================
 % Tables (Optional)
 %===============================
+\clearpage
 \newpage
 \section*{Tables}
 
 
-\begin{table}[h!]
+\begin{table}[H]
     \centering
     \caption{
         \textbf{Example table (table title).} Table description. \lipsum[1]
@@ -489,6 +553,7 @@ Ultimately, ``Beyond Viterbi'' represents a shift towards a more probabilistic, 
 %===============================
 % Algorithms (Optional)
 %===============================
+\clearpage
 \newpage
 \section*{Algorithms}
 
