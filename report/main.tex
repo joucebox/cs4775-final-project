@@ -386,17 +386,17 @@ Alignment lengths varied considerably across the dataset, from 30 nucleotides (s
 
 \subsection{Family-Specific Performance}
 
-To understand whether MEA provides consistent benefits across diverse RNA families or exhibits family-dependent behavior, we performed stratified analysis by RNA family. Figure~\ref{fig:family_performance} shows F1 improvement (MEA $-$ Viterbi) for selected representative families at $\gamma=0.5$ (power weighting).
+To understand whether MEA provides consistent benefits across diverse RNA families or exhibits family-dependent behavior, we performed stratified analysis by RNA family. Figure~\ref{fig:family_performance} shows F1 improvement (MEA $-$ Viterbi) for selected representative families at $\gamma=0.5$.
 
 Key observations:
 
 \begin{itemize}
-    \item \textbf{Highly conserved families (e.g., RF00774 rRNA):} MEA improvements are modest (0.5\%--1.5\%), as the posterior distribution is typically concentrated around a single well-defined alignment path. In these cases, Viterbi already captures the dominant signal, and MEA provides marginal gains.
-    \item \textbf{Moderately divergent families (e.g., RF00236, RF00063):} MEA achieves consistent and meaningful improvements (2\%--4\%), as posterior uncertainty creates multiple plausible alignment regions that MEA can exploit.
-    \item \textbf{Highly divergent families (e.g., RF00058, RF01018):} MEA improvements are variable but occasionally dramatic (up to 5\%--8\%), reflecting the stochastic nature of posterior distributions in low-similarity regimes. At these extremes, the posterior may form multiple competing modes, and MEA's ability to integrate across the ensemble becomes most valuable.
+    \item \textbf{Substantial gains for most families:} The majority of families (e.g., RF02984, RF02900) exhibit positive F1 improvements (2\%--6\%), indicating that MEA effectively captures posterior uncertainty across diverse structural contexts.
+    \item \textbf{Consistent, moderate improvements across a broad subset:} MEA achieves consistent and meaningful improvements, as posterior uncertainty creates multiple plausible alignment regions that MEA can exploit.
+    \item \textbf{Family-specific degradation in a small minority of cases:} A small number of families (e.g., RF03595, RF02524, RF00225) exhibit negative F1 differences, with MEA underperforming Viterbi by up to approximately 3\%. This indicates that MEA is not universally superior and can struggle in certain contexts.
 \end{itemize}
 
-This stratified analysis confirms that MEA is particularly valuable in moderate-to-high divergence regimes, where the posterior landscape is complex but informative. In highly conserved families, the computational overhead of MEA may not be justified unless maximum achievable accuracy is the sole criterion.
+This stratified analysis confirms that MEA is particularly valuable in the majority of families, where the posterior landscape is complex but informative. While its performance can degrade in certain families, the use of adaptive decoding strategies of family-aware tuning may help mitigate these issues.
 
 \subsection{Statistical Significance and Robustness}
 
@@ -585,37 +585,48 @@ Ultimately, ``Beyond Viterbi'' represents a shift towards a more probabilistic, 
     \label{fig:efficiency_scatter}
 \end{figure}
 
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/family_performance.png}
+    \caption{
+        \textbf{Family-specific analysis of F1 improvement highlights contextual benefits of MEA.}
+        Bar plot showing the F1 score differences between our MEA and Viterbi decodings across chosen (top 10, bottom 5) RNA families at $\gamma = 0.5$.
+        The majority of families show improved alignment quality with MEA, but some experienced alignment degradation, showing that MEA's benefits are family-dependent.
+    }
+    \label{fig:family_performance}
+\end{figure}
+
 
 %===============================
 % Tables (Optional)
 %===============================
-\clearpage
-\newpage
-\section*{Tables}
+% \clearpage
+% \newpage
+% \section*{Tables}
 
 
-\begin{table}[H]
-    \centering
-    \caption{
-        \textbf{Example table (table title).} Table description. \lipsum[1]
-    }
-    \label{tab:ex}
-    \begin{tabular}{|c|c |c c c |c c| c c|}
-        \hline
-              &       & \multicolumn{3}{c|}{$A$} & \multicolumn{2}{c|}{$B$} & \multicolumn{2}{c|}{$C$}                                             \\ \cline{3-9}
-        $n_1$ & $n_2$ & Analytic                 & Method 1                 & Method 2                 & Analytic & Method 3 & Analytic & Method 4 \\
-        \hline \hline
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        \hline \hline
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        \hline \hline
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
-        \hline
-    \end{tabular}
-\end{table}
+% \begin{table}[H]
+%     \centering
+%     \caption{
+%         \textbf{Example table (table title).} Table description. \lipsum[1]
+%     }
+%     \label{tab:ex}
+%     \begin{tabular}{|c|c |c c c |c c| c c|}
+%         \hline
+%               &       & \multicolumn{3}{c|}{$A$} & \multicolumn{2}{c|}{$B$} & \multicolumn{2}{c|}{$C$}                                             \\ \cline{3-9}
+%         $n_1$ & $n_2$ & Analytic                 & Method 1                 & Method 2                 & Analytic & Method 3 & Analytic & Method 4 \\
+%         \hline \hline
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         \hline \hline
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         \hline \hline
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         x     & x     & x                        & x                        & x                        & x        & x        & x        & x        \\
+%         \hline
+%     \end{tabular}
+% \end{table}
 
 
 %===============================

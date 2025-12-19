@@ -40,15 +40,15 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Dataset Characteristics and Alignment Complexity}{7}{subsection.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Family-Specific Performance}{7}{subsection.3.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Statistical Significance and Robustness}{7}{subsection.3.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Sensitivity to Parameter Estimation}{8}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Sensitivity to Parameter Estimation}{7}{subsection.3.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}Discussion}{8}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Theoretical Implications: Beyond the Best Path}{8}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Computational Trade-offs}{8}{subsection.4.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}Time and Space Complexity}{8}{subsubsection.4.2.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Constant-Factor Overheads}{8}{subsubsection.4.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.3}Practical Implications}{8}{subsubsection.4.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.4}Memory Efficiency and Scalability}{8}{subsubsection.4.2.4}\protected@file@percent }
 \citation{probcons}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.4}Memory Efficiency and Scalability}{9}{subsubsection.4.2.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.5}Conclusion on Trade-offs}{9}{subsubsection.4.2.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Weighting Schemes}{9}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Future Directions}{9}{subsection.4.4}\protected@file@percent }
@@ -73,8 +73,8 @@
 \newlabel{fig:posterior_mass}{{5}{14}{\textbf {Posterior mass analysis supports the uncertainty-aware advantage of MEA.} Multi-panel summary of posterior support as a function of $\gamma $: (A) mean posterior mass captured by MEA vs.\ Viterbi, (B) posterior mass gain (MEA $-$ Viterbi), (C) partition of captured posterior mass into shared and method-specific components, and (D) distributional view of mass gain for a representative $\gamma $ setting. Across typical $\gamma $ values, MEA captures comparable or greater posterior support than the single MAP path}{figure.caption.5}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces  \textbf  {Posterior efficiency: MEA allocates aligned pairs to higher-confidence posterior matches.} Scatter plots of posterior mass per aligned pair versus number of aligned pairs for MEA and Viterbi, shown for representative $\gamma $ values. MEA tends to achieve higher posterior mass per aligned pair, consistent with selecting matches that are more strongly supported by the posterior distribution. }}{14}{figure.caption.6}\protected@file@percent }
 \newlabel{fig:efficiency_scatter}{{6}{14}{\textbf {Posterior efficiency: MEA allocates aligned pairs to higher-confidence posterior matches.} Scatter plots of posterior mass per aligned pair versus number of aligned pairs for MEA and Viterbi, shown for representative $\gamma $ values. MEA tends to achieve higher posterior mass per aligned pair, consistent with selecting matches that are more strongly supported by the posterior distribution}{figure.caption.6}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces  \textbf  {Example table (table title).} Table description. \lipsum [1] }}{15}{table.caption.7}\protected@file@percent }
-\newlabel{tab:ex}{{1}{15}{\textbf {Example table (table title).} Table description. \lipsum [1]}{table.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces  \textbf  {Family-specific analysis of F1 improvement highlights contextual benefits of MEA.} Bar plot showing the F1 score differences between our MEA and Viterbi decodings across chosen (top 10, bottom 5) RNA families at $\gamma = 0.5$. The majority of families show improved alignment quality with MEA, but some experienced alignment degradation, showing that MEA's benefits are family-dependent. }}{15}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:family_performance}{{7}{15}{\textbf {Family-specific analysis of F1 improvement highlights contextual benefits of MEA.} Bar plot showing the F1 score differences between our MEA and Viterbi decodings across chosen (top 10, bottom 5) RNA families at $\gamma = 0.5$. The majority of families show improved alignment quality with MEA, but some experienced alignment degradation, showing that MEA's benefits are family-dependent}{figure.caption.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Parameter Estimation}{16}{subsection.4.6}\protected@file@percent }
 \newlabel{alg:param_est}{{4.6}{16}{Parameter Estimation}{subsection.4.6}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}Column-wise state labeling}{16}{subsubsection.4.6.1}\protected@file@percent }
