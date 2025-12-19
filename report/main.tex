@@ -49,7 +49,7 @@ Sequence alignment stands as the computational bedrock of modern biology, servin
 
 \thispagestyle{empty}
 
-\noindent \textbf{Keywords (minumum 5):}
+\noindent \textbf{Keywords:}
 Pairwise sequence alignment, Hidden Markov Model (HMM), Maximum Expected Accuracy (MEA), Viterbi algorithm, Forward-backward algorithm, RNA sequence analysis, Posterior probability
 
 \noindent \textbf{Project type:} Reimplementation
@@ -442,13 +442,13 @@ The practical time overhead of MEA relative to Viterbi manifests as follows:
     \item \textbf{MEA posterior and DP:} Computing posterior match probabilities requires element-wise division of forward and backward values ($3 L_X L_Y$ operations). The MEA DP itself mirrors Viterbi ($\sim 9 L_X L_Y$ operations). Total: $\sim 12 L_X L_Y$ operations.
 \end{itemize}
 
-Thus, a complete MEA workflow (forward-backward + MEA DP) incurs approximately $\sim 48 L_X L_Y$ scalar operations, roughly **5--6 times the cost of Viterbi alone**.
+Thus, a complete MEA workflow (forward-backward + MEA DP) incurs approximately $\sim 48 L_X L_Y$ scalar operations, roughly \textbf{5--6 times the cost of Viterbi alone}.
 
 \subsubsection{Practical Implications}
 
 For typical pairwise RNA alignments in our benchmark, sequence lengths ranged from 50 to 500 nucleotides. At $L_X = L_Y = 200$ (a representative mid-range alignment), the forward-backward computation requires processing $\sim 40,000$ cells. On modern hardware, this translates to sub-second latency, easily justifying the accuracy gains. Even at $L_X = L_Y = 500$, the computation completes in a few seconds on a single CPU thread.
 
-For the 547 pairwise alignments in our benchmark, the complete MEA analysis (parameter estimation, forward-backward, Viterbi, and MEA over four weighting schemes) completes in **under 60 seconds on a standard laptop**, demonstrating that the computational overhead is negligible for biological workflows where correctness is paramount.
+For the 547 pairwise alignments in our benchmark, the complete MEA analysis (parameter estimation, forward-backward, Viterbi, and MEA over four weighting schemes) completes in \textbf{under 60 seconds on a standard laptop}, demonstrating that the computational overhead is negligible for biological workflows where correctness is paramount.
 
 \subsubsection{Memory Efficiency and Scalability}
 
