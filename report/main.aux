@@ -77,22 +77,24 @@
 \newlabel{fig:family_performance}{{7}{15}{\textbf {Family-specific analysis of F1 improvement highlights contextual benefits of MEA.} Bar plot showing the F1 score differences between our MEA and Viterbi decodings across chosen (top 10, bottom 5) RNA families at $\gamma = 0.5$. The majority of families show improved alignment quality with MEA, but some experienced alignment degradation, showing that MEA's benefits are family-dependent}{figure.caption.7}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces  \textbf  {Statistical significance of MEA improvements across weighting schemes.} Mean $\Delta $F1 (MEA $-$ Viterbi) with 95\% confidence intervals computed via RNA family stratification, shown for each MEA weighting scheme as a function of $\gamma $. MEA achieves the most consistent statistically significant improvements in the moderate $\gamma $ range (0.3--0.7). }}{15}{figure.caption.8}\protected@file@percent }
 \newlabel{fig:ci_f1}{{8}{15}{\textbf {Statistical significance of MEA improvements across weighting schemes.} Mean $\Delta $F1 (MEA $-$ Viterbi) with 95\% confidence intervals computed via RNA family stratification, shown for each MEA weighting scheme as a function of $\gamma $. MEA achieves the most consistent statistically significant improvements in the moderate $\gamma $ range (0.3--0.7)}{figure.caption.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Parameter Estimation}{16}{subsection.4.6}\protected@file@percent }
-\newlabel{alg:param_est}{{4.6}{16}{Parameter Estimation}{subsection.4.6}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}Column-wise state labeling}{16}{subsubsection.4.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.2}Sufficient statistics}{16}{subsubsection.4.6.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.3}Emissions with pseudocounts}{16}{subsubsection.4.6.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.4}Transitions and affine-gap parameters}{16}{subsubsection.4.6.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Forward-Backward Algorithm}{17}{subsection.4.7}\protected@file@percent }
-\newlabel{alg:forward_backward}{{4.7}{17}{Forward-Backward Algorithm}{subsection.4.7}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.7.1}Forward recursion}{17}{subsubsection.4.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.7.2}Backward recursion}{17}{subsubsection.4.7.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}Viterbi Algorithm}{17}{subsection.4.8}\protected@file@percent }
-\newlabel{alg:viterbi}{{4.8}{17}{Viterbi Algorithm}{subsection.4.8}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}Dynamic programming}{18}{subsubsection.4.8.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.2}Termination and traceback}{18}{subsubsection.4.8.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces  \textbf  {Robustness of decoding performance under jackknife parameter resampling.} Distribution of F1 scores across jackknife folds (holding out one RNA family at a time) for MEA and Viterbi, at $\gamma =0.5$. Box plots and relevant points show greater variability of F1 performance for Viterbi. MEA exhibits a consistently higher F1 score while maintaining a similar distribution, indicating robustness to parameter estimation variance. }}{16}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:jackknife_f1}{{9}{16}{\textbf {Robustness of decoding performance under jackknife parameter resampling.} Distribution of F1 scores across jackknife folds (holding out one RNA family at a time) for MEA and Viterbi, at $\gamma =0.5$. Box plots and relevant points show greater variability of F1 performance for Viterbi. MEA exhibits a consistently higher F1 score while maintaining a similar distribution, indicating robustness to parameter estimation variance}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Parameter Estimation}{17}{subsection.4.6}\protected@file@percent }
+\newlabel{alg:param_est}{{4.6}{17}{Parameter Estimation}{subsection.4.6}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}Column-wise state labeling}{17}{subsubsection.4.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.2}Sufficient statistics}{17}{subsubsection.4.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.3}Emissions with pseudocounts}{17}{subsubsection.4.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.4}Transitions and affine-gap parameters}{17}{subsubsection.4.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Forward-Backward Algorithm}{18}{subsection.4.7}\protected@file@percent }
+\newlabel{alg:forward_backward}{{4.7}{18}{Forward-Backward Algorithm}{subsection.4.7}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.7.1}Forward recursion}{18}{subsubsection.4.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.7.2}Backward recursion}{18}{subsubsection.4.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}Viterbi Algorithm}{18}{subsection.4.8}\protected@file@percent }
+\newlabel{alg:viterbi}{{4.8}{18}{Viterbi Algorithm}{subsection.4.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}Dynamic programming}{19}{subsubsection.4.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.2}Termination and traceback}{19}{subsubsection.4.8.2}\protected@file@percent }
 \ttl@finishall
-\newlabel{LastPage}{{4.8.2}{18}{Termination and traceback}{page.18}{}}
-\gdef\lastpage@lastpage{18}
-\gdef\lastpage@lastpageHy{18}
-\gdef \@abspage@last{19}
+\newlabel{LastPage}{{4.8.2}{19}{Termination and traceback}{page.19}{}}
+\gdef\lastpage@lastpage{19}
+\gdef\lastpage@lastpageHy{19}
+\gdef \@abspage@last{20}

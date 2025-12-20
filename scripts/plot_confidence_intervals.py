@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
 Generate confidence interval plot for ΔF1 (MEA - Viterbi) across γ values.
-Uses stratified bootstrap resampling by RNA family.
 """
 
 import sys
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -94,7 +92,6 @@ def compute_delta_f1_by_family(cache: PosteriorCache, hmm, references: list) -> 
         dict mapping (family, gamma, method) -> list of ΔF1 values
     """
     results = defaultdict(list)
-    # Exclude 'threshold' from methods per user request
     methods = [m for m in MEA_METHODS if m != "threshold"]
     
     for ref_alignment in references:
@@ -102,27 +99,21 @@ def compute_delta_f1_by_family(cache: PosteriorCache, hmm, references: list) -> 
         seq_x, seq_y = ref_alignment.original_sequences
         pair_id = ref_alignment.name or f"pair_{id(ref_alignment)}"
         
-        # Compute Viterbi F1
         viterbi_pairs = cache.get_or_compute_viterbi(pair_id, hmm, seq_x, seq_y)
         viterbi_alignment = _reconstruct_alignment_from_pairs(seq_x, seq_y, viterbi_pairs)
         viterbi_metrics = evaluate_all_metrics([viterbi_alignment], [ref_alignment])
         viterbi_f1 = viterbi_metrics["f1"].mean
         
-        # Compute MEA F1 for each gamma and method
         for gamma in GAMMA_VALUES:
             for method in methods:
-                # Skip invalid method-gamma combinations
                 if method == "probcons" and gamma <= 0.5:
                     continue
                 if method == "log_odds" and (gamma <= 0 or gamma >= 1):
-                    continue
-                # power allows any positive gamma
-                
+                    continue                
                 mea_pairs = cache.get_or_compute_mea(pair_id, gamma, hmm, seq_x, seq_y, method=method)
                 mea_alignment = _reconstruct_alignment_from_pairs(seq_x, seq_y, mea_pairs)
                 mea_metrics = evaluate_all_metrics([mea_alignment], [ref_alignment])
                 mea_f1 = mea_metrics["f1"].mean
-                
                 delta_f1 = mea_f1 - viterbi_f1
                 results[(family, gamma, method)].append(delta_f1)
     
@@ -147,7 +138,6 @@ def stratified_bootstrap_ci(
     Returns:
         (mean, lower_bound, upper_bound)
     """
-    # Compute observed mean
     all_values = []
     for family in families:
         all_values.extend(data_by_family.get(family, []))
@@ -157,21 +147,18 @@ def stratified_bootstrap_ci(
     
     observed_mean = np.mean(all_values)
     
-    # Stratified bootstrap
     bootstrap_means = []
     for _ in range(n_bootstrap):
         resampled_values = []
         for family in families:
             family_values = data_by_family.get(family, [])
             if family_values:
-                # Resample with replacement within family
                 resampled = np.random.choice(family_values, size=len(family_values), replace=True)
                 resampled_values.extend(resampled)
         
         if resampled_values:
             bootstrap_means.append(np.mean(resampled_values))
     
-    # Compute percentile-based confidence interval
     alpha = 1 - confidence
     lower_percentile = (alpha / 2) * 100
     upper_percentile = (1 - alpha / 2) * 100
@@ -214,20 +201,17 @@ def plot_confidence_intervals(results: dict, families: list[str], output_path: P
         upper_bounds = []
         
         for gamma in GAMMA_VALUES:
-            # Organize data by family for this (gamma, method)
             data_by_family = defaultdict(list)
             for family in families:
                 key = (family, gamma, method)
                 if key in results:
                     data_by_family[family].extend(results[key])
             
-            # Compute stratified bootstrap CI
             mean, lower, upper = stratified_bootstrap_ci(data_by_family, families)
             means.append(mean)
             lower_bounds.append(lower)
             upper_bounds.append(upper)
         
-        # Plot mean line
         ax.plot(GAMMA_VALUES, means, 
                 color=colors[method], 
                 linewidth=2, 
@@ -235,24 +219,20 @@ def plot_confidence_intervals(results: dict, families: list[str], output_path: P
                 marker='o',
                 markersize=4)
         
-        # Plot confidence interval band
         ax.fill_between(GAMMA_VALUES, 
                         lower_bounds, 
                         upper_bounds,
                         color=colors[method],
                         alpha=0.2)
     
-    # Add zero reference line
     ax.axhline(y=0, color='black', linestyle='--', linewidth=1, alpha=0.5, label='Viterbi baseline')
     
-    # Formatting
     ax.set_xlabel('γ (Weighting Parameter)', fontsize=12)
     ax.set_ylabel('ΔF1 (MEA - Viterbi)', fontsize=12)
     ax.set_title('95% Confidence Intervals for F1 Improvement', fontsize=14, fontweight='bold')
     ax.legend(loc='best', frameon=True, fontsize=10)
     ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
     
-    # Highlight the intermediate gamma region mentioned in text (0.3-0.7)
     ax.axvspan(0.3, 0.7, alpha=0.05, color='green', label='Intermediate γ (0.3-0.7)')
     
     plt.tight_layout()
@@ -266,11 +246,9 @@ def main():
     references = collect_alignments(str(ALIGNMENTS_FOLDER))
     print(f"Loaded {len(references)} reference alignments")
     
-    # Extract unique families
     families = sorted(set(extract_family_from_name(ref.name) for ref in references))
     print(f"Found {len(families)} unique RNA families")
     
-    # Initialize cache
     cache = PosteriorCache(CACHE_FOLDER)
     
     print("Computing ΔF1 for all families, gammas, and methods...")

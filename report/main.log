@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.3.13)  19 DEC 2025 22:19
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.3.13)  19 DEC 2025 22:52
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -671,95 +671,92 @@ l.120
        [1] [2]
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <9> not available
 (Font)              Font shape `T1/phv/b/sl' tried instead on input line 198.
- [3] [4] [5] [6]
-
-LaTeX Warning: Reference `fig:jackknife_f1' on page 7 undefined on input line 411.
-
-[7] [8] [9] (./main.bbl) [10]
-<figures/delta_f1_vs_gamma.png, id=323, 1293.1512pt x 498.1812pt>
+ [3] [4] [5] [6] [7] [8] [9] (./main.bbl) [10]
+<figures/delta_f1_vs_gamma.png, id=325, 1293.1512pt x 498.1812pt>
 File: figures/delta_f1_vs_gamma.png Graphic file (type png)
 <use figures/delta_f1_vs_gamma.png>
 Package pdftex.def Info: figures/delta_f1_vs_gamma.png  used on input line 518.
 (pdftex.def)             Requested size: 450.43253pt x 173.52985pt.
-<figures/column_identity_vs_gamma.png, id=325, 1293.1512pt x 498.1812pt>
+<figures/column_identity_vs_gamma.png, id=327, 1293.1512pt x 498.1812pt>
 File: figures/column_identity_vs_gamma.png Graphic file (type png)
 <use figures/column_identity_vs_gamma.png>
 Package pdftex.def Info: figures/column_identity_vs_gamma.png  used on input line 529.
 (pdftex.def)             Requested size: 450.43253pt x 173.52985pt.
-<figures/f1_precision_recall_vs_gamma.png, id=326, 1004.7939pt x 741.0084pt>
+<figures/f1_precision_recall_vs_gamma.png, id=328, 1004.7939pt x 741.0084pt>
 File: figures/f1_precision_recall_vs_gamma.png Graphic file (type png)
 <use figures/f1_precision_recall_vs_gamma.png>
 Package pdftex.def Info: figures/f1_precision_recall_vs_gamma.png  used on input line 540.
 (pdftex.def)             Requested size: 450.43253pt x 332.18433pt.
-<figures/RF00236_4_0_diff_zoom.png, id=327, 867.24pt x 433.62pt>
+<figures/RF00236_4_0_diff_zoom.png, id=329, 867.24pt x 433.62pt>
 File: figures/RF00236_4_0_diff_zoom.png Graphic file (type png)
 <use figures/RF00236_4_0_diff_zoom.png>
 Package pdftex.def Info: figures/RF00236_4_0_diff_zoom.png  used on input line 552.
 (pdftex.def)             Requested size: 450.43253pt x 225.21904pt.
-<figures/multi_panel.png, id=328, 1004.0712pt x 714.9912pt>
+<figures/multi_panel.png, id=330, 1004.0712pt x 714.9912pt>
 File: figures/multi_panel.png Graphic file (type png)
 <use figures/multi_panel.png>
 Package pdftex.def Info: figures/multi_panel.png  used on input line 564.
 (pdftex.def)             Requested size: 450.43253pt x 320.75027pt.
-<figures/efficiency_scatter.png, id=329, 859.5312pt x 371.7087pt>
+<figures/efficiency_scatter.png, id=331, 859.5312pt x 371.7087pt>
 File: figures/efficiency_scatter.png Graphic file (type png)
 <use figures/efficiency_scatter.png>
 Package pdftex.def Info: figures/efficiency_scatter.png  used on input line 579.
 (pdftex.def)             Requested size: 450.43253pt x 194.79832pt.
-<figures/family_performance.png, id=330, 858.5676pt x 423.984pt>
+<figures/family_performance.png, id=332, 858.5676pt x 423.984pt>
 File: figures/family_performance.png Graphic file (type png)
 <use figures/family_performance.png>
 Package pdftex.def Info: figures/family_performance.png  used on input line 590.
 (pdftex.def)             Requested size: 450.43253pt x 222.43318pt.
-<figures/ci_f1.png, id=331, 858.5676pt x 424.9476pt>
+<figures/ci_f1.png, id=333, 858.5676pt x 424.9476pt>
 File: figures/ci_f1.png Graphic file (type png)
 <use figures/ci_f1.png>
 Package pdftex.def Info: figures/ci_f1.png  used on input line 601.
 (pdftex.def)             Requested size: 450.43253pt x 222.93872pt.
- [11 <./figures/delta_f1_vs_gamma.png> <./figures/column_identity_vs_gamma.png>] [12 <./figures/f1_precision_recall_vs_gamma.png>] [13 <./figures/RF00236_4_0_diff_zoom.png>] [14 <./figures/multi_panel.png> <./figures/efficiency_scatter.png>] [15 <./figures/family_performance.png> <./figures/ci_f1.png>] [16
+<figures/jackknife_f1.png, id=334, 569.4876pt x 426.393pt>
+File: figures/jackknife_f1.png Graphic file (type png)
+<use figures/jackknife_f1.png>
+Package pdftex.def Info: figures/jackknife_f1.png  used on input line 612.
+(pdftex.def)             Requested size: 450.43253pt x 337.25667pt.
+ [11 <./figures/delta_f1_vs_gamma.png> <./figures/column_identity_vs_gamma.png>] [12 <./figures/f1_precision_recall_vs_gamma.png>] [13 <./figures/RF00236_4_0_diff_zoom.png>] [14 <./figures/multi_panel.png> <./figures/efficiency_scatter.png>] [15 <./figures/family_performance.png> <./figures/ci_f1.png>] [16 <./figures/jackknife_f1.png>] [17
 
 ]
-Overfull \hbox (18.9172pt too wide) detected at line 771
+Overfull \hbox (18.9172pt too wide) detected at line 782
 []
  []
 
 
-Overfull \hbox (30.0pt too wide) in paragraph at lines 771--771
+Overfull \hbox (30.0pt too wide) in paragraph at lines 782--782
 [] 
  []
 
 
-Overfull \hbox (3.99387pt too wide) detected at line 816
+Overfull \hbox (3.99387pt too wide) detected at line 827
 [] \OML/cmm/m/it/10 Z[] \OT1/cmr/m/n/10 = [][][] \OML/cmm/m/it/10 ^^Y\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 M\OT1/cmr/m/n/10 ) + [] \OML/cmm/m/it/10 e[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 x[]; y[]\OT1/cmr/m/n/10 ) + \OML/cmm/m/it/10 B[]\OT1/cmr/m/n/10 (1\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1)\OML/cmm/m/it/10 ;  [] ^^Y\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 X\OT1/cmr/m/n/10 ) + [] \OML/cmm/m/it/10 e[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 x[]\OT1/cmr/m/n/10 ) + \OML/cmm/m/it/10 B[]\OT1/cmr/m/n/10 (1\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 0)\OML/cmm/m/it/10 ;  [] ^^Y\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 Y\OT1/cmr/m/n/10 ) + [] \OML/cmm/m/it/10 e[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 y[]\OT1/cmr/m/n/10 ) + \OML/cmm/m/it/10 B[]\OT1/cmr/m/n/10 (0\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 1)[]\OML/cmm/m/it/10 :
  []
 
-[17] [18] 
+[18] [19] 
 enddocument/afterlastpage: lastpage setting LastPage.
 (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
 Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: E452E548B66C6EC1F3E094D5CB1D8CC6;10780.
  ) 
 Here is how much of TeX's memory you used:
- 25418 strings out of 476182
- 479280 string characters out of 5795595
+ 25433 strings out of 476182
+ 479567 string characters out of 5795595
  1947975 words of memory out of 5000000
- 46682 multiletter control sequences out of 15000+600000
- 626359 words of font info for 306 fonts, out of 8000000 for 9000
+ 46689 multiletter control sequences out of 15000+600000
+ 626583 words of font info for 310 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  94i,12n,107p,2109b,607s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvbo8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on main.pdf (19 pages, 2530513 bytes).
+Output written on main.pdf (20 pages, 2654299 bytes).
 PDF statistics:
- 481 PDF objects out of 1000 (max. 8388607)
- 400 compressed objects within 4 object streams
- 87 named destinations out of 1000 (max. 500000)
- 77769 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 490 PDF objects out of 1000 (max. 8388607)
+ 405 compressed objects within 5 object streams
+ 89 named destinations out of 1000 (max. 500000)
+ 77774 words of extra memory for PDF output out of 89155 (max. 10000000)
 

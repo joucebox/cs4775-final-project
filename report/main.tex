@@ -410,7 +410,7 @@ Overall, these results confirm that MEA's improvements provide statistical signi
 
 We evaluated the robustness of our results to parameter estimation by performing jackknife resampling: for each fold, we held out one RNA family, re-estimated HMM parameters from the remaining families, and re-evaluated on the held-out family. Figure~\ref{fig:jackknife_f1} presents the range of F1 scores across jackknife folds.
 
-Results demonstrate that relative rankings (MEA vs.\ Viterbi, and among MEA weighting schemes) are stable across parameter resamples, with confidence intervals overlapping minimal offsets. This indicates that our conclusions are robust to parameter estimation variance and not artifacts of overfitting to a particular subset of families.
+Results demonstrate that across folds, MEA consistently outperforms Viterbi, with equal or higher F1 scores. Since the shape of the distributions are comparable (even with outliers), it is clear that MEA does not introduce additional instabilities with parameter estimation.
 
 
 %====================================
@@ -605,6 +605,17 @@ Ultimately, ``Beyond Viterbi'' represents a shift towards a more probabilistic, 
         MEA achieves the most consistent statistically significant improvements in the moderate $\gamma$ range (0.3--0.7).
     }
     \label{fig:ci_f1}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/jackknife_f1.png}
+    \caption{
+        \textbf{Robustness of decoding performance under jackknife parameter resampling.}
+        Distribution of F1 scores across jackknife folds (holding out one RNA family at a time) for MEA and Viterbi, at $\gamma=0.5$.
+        Box plots and relevant points show greater variability of F1 performance for Viterbi. MEA exhibits a consistently higher F1 score while maintaining a similar distribution, indicating robustness to parameter estimation variance.
+    }
+    \label{fig:jackknife_f1}
 \end{figure}
 
 
