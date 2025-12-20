@@ -402,9 +402,9 @@ This stratified analysis confirms that MEA is particularly valuable in the major
 
 To assess the statistical significance of observed F1 improvements, we computed 95\% confidence intervals for $\Delta$F1 (MEA $-$ Viterbi) within each weighting scheme using a stratified bootstrap procedure (stratifying by RNA family). Figure~\ref{fig:ci_f1} summarizes the results.
 
-For most weighting schemes, the confidence interval for the mean $\Delta$F1 excludes zero at intermediate $\gamma$ values (0.3--0.7), indicating statistically significant improvements. At the extremes ($\gamma < 0.2$ or $\gamma > 0.8$), confidence intervals widen, reflecting greater variability and less consistent performance across families.
+For most weighting schemes, MEA shows the most improvements at intermediate $\gamma$ values (0.3--0.7), where confidence intervals are narrow and centered above zero. At lower $\gamma$ values, most options show negative $\Delta$F1 values with wider confidence intervals, showing sensitivity to noise. The larger $\gamma$ values show stabilization near small, positive values with a confidence interval over 0, suggesting reduced statistical significance. 
 
-The robustness analysis further examined alignment disagreement patterns. For pairs of alignments where MEA and Viterbi differed, we quantified the fraction of disagreements that corresponded to genuinely ambiguous positions (posterior probability 0.3--0.7) versus positions where one method made a clearly incorrect choice. MEA disagreements were overwhelmingly localized to ambiguous regions (87\% of cases), supporting the hypothesis that MEA makes deliberate posterior-informed choices rather than random errors.
+Overall, these results confirm that MEA's improvements provide statistical significance, especially with a moderate $\gamma$ value. Outside that range, performance becomes more unpredictable, showing the importance of parameter selection.
 
 \subsection{Sensitivity to Parameter Estimation}
 
@@ -594,6 +594,17 @@ Ultimately, ``Beyond Viterbi'' represents a shift towards a more probabilistic, 
         The majority of families show improved alignment quality with MEA, but some experienced alignment degradation, showing that MEA's benefits are family-dependent.
     }
     \label{fig:family_performance}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/ci_f1.png}
+    \caption{
+        \textbf{Statistical significance of MEA improvements across weighting schemes.}
+        Mean $\Delta$F1 (MEA $-$ Viterbi) with 95\% confidence intervals computed via RNA family stratification, shown for each MEA weighting scheme as a function of $\gamma$.
+        MEA achieves the most consistent statistically significant improvements in the moderate $\gamma$ range (0.3--0.7).
+    }
+    \label{fig:ci_f1}
 \end{figure}
 
 
