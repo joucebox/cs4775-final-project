@@ -276,7 +276,78 @@ We implement an equivalent formulation to the forward-backward algorithm covered
 
 \subsection{Viterbi decoding (MAP alignment)}
 
-We implement an equivalent formulation to the Viterbi algorithm covered in class, adapted for the pair-HMM with three states (match, insert-X, insert-Y). The algorithm finds the single most probable alignment path by maximizing the joint probability of sequences and hidden states using dynamic programming. Starting from the origin, it computes the maximum probability of reaching each grid position in each state, then traces back from the optimal terminal state to recover the alignment. The full algorithm, including initialization for leading gaps, recurrence relations, and traceback procedure, is provided in Algorithm~\ref{alg:viterbi} of the appendix.
+We implement an equivalent formulation to the Viterbi algorithm covered in class, adapted for the Pair-HMM with three states (match, insert-X, insert-Y). We assume no direct transitions between insert states (i.e., $a_{XY}=a_{YX}=0$). The algorithm finds the single most probable alignment path (the MAP path) by dynamic programming: starting from the origin, it computes the maximum log-probability of reaching each grid position in each state, then traces back from the optimal terminal state to recover the alignment.
+
+The maximum a posteriori alignment is
+\[
+    Z^\star = \arg\max_{Z\in\mathcal{Z}(X,Y)} P(Z\mid X,Y)
+    = \arg\max_{Z\in\mathcal{Z}(X,Y)} \frac{P(X, Y, Z)}{P(X,Y)}
+    = \arg\max_{Z\in\mathcal{Z}(X,Y)} \log P(X,Y,Z).
+\]
+
+\subsubsection{Dynamic programming}
+
+For $0\le i\le L_X$, $0\le j\le L_Y$ and $s\in\{M,X,Y\}$ define
+\[
+    V^s_{i,j}
+    =
+    \max_{Z:\,(i_T,j_T)=(i,j),\,z_T=s}
+    \log P(X_{1:i},Y_{1:j},Z),
+\]
+with $V^s_{i,j}=-\infty$ if no such path exists.
+
+Initialization at $(0,0)$ is $V^M_{0,0}=V^X_{0,0}=V^Y_{0,0}=-\infty$. First non-empty cells:
+\[
+    V^X_{1,0} = \log\pi(X)+\log e_X(x_1),\quad
+    V^Y_{0,1} = \log\pi(Y)+\log e_Y(y_1),\quad
+    V^M_{1,1} = \log\pi(M)+\log e_M(x_1,y_1).
+\]
+Leading gaps are filled via
+\begin{align*}
+    V^X_{i,0}
+     & = \log e_X(x_i)
+    + \max\bigl\{V^M_{i-1,0}+\log a_{MX},\; V^X_{i-1,0}+\log a_{XX}\bigr\},
+    \quad i=2,\dots,L_X, \\
+    V^Y_{0,j}
+     & = \log e_Y(y_j)
+    + \max\bigl\{V^M_{0,j-1}+\log a_{MY},\; V^Y_{0,j-1}+\log a_{YY}\bigr\},
+    \quad j=2,\dots,L_Y.
+\end{align*}
+
+For $1\le i\le L_X$, $1\le j\le L_Y$ (excluding the base cases initialized above, e.g.\ $(1,1)$):
+\begin{align*}
+    V^M_{i,j}
+     & = \log e_M(x_i,y_j)
+    + \max\bigl\{
+    V^M_{i-1,j-1}+\log a_{MM},\;
+    V^X_{i-1,j-1}+\log a_{XM},\;
+    V^Y_{i-1,j-1}+\log a_{YM}
+    \bigr\},               \\
+    V^X_{i,j}
+     & = \log e_X(x_i)
+    + \max\bigl\{
+    V^M_{i-1,j}+\log a_{MX},\;
+    V^X_{i-1,j}+\log a_{XX}
+    \bigr\},               \\
+    V^Y_{i,j}
+     & = \log e_Y(y_j)
+    + \max\bigl\{
+    V^M_{i,j-1}+\log a_{MY},\;
+    V^Y_{i,j-1}+\log a_{YY}
+    \bigr\}.
+\end{align*}
+
+\subsubsection{Termination and traceback}
+
+At $(L_X,L_Y)$ we add end probabilities:
+\[
+    \ell^\star = \max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr),
+\]
+with optimal final state
+\[
+    s^\star = \arg\max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr).
+\]
+We store backpointers during the DP and trace back from $(L_X,L_Y,s^\star)$ to $(0,0)$, then reverse the sequence of moves to recover the optimal alignment.
 
 \subsection{Maximum expected accuracy (MEA) alignment}
 
@@ -828,78 +899,5 @@ using $a_{XY}=a_{YX}=0$. The backward log-partition is
     \bigr).
 \]
 We use $\log Z = \tfrac12(\log Z_f+\log Z_b)$ as a numerically stable estimate of $\log P(X,Y)$.
-
-\subsection{Viterbi Algorithm}\label{alg:viterbi}
-
-The maximum a posteriori alignment is
-\[
-    Z^\star = \arg\max_{Z\in\mathcal{Z}(X,Y)} P(X,Y,Z)
-    = \arg\max_{Z\in\mathcal{Z}(X,Y)} \log P(X,Y,Z).
-\]
-
-\subsubsection{Dynamic programming}
-
-For $0\le i\le L_X$, $0\le j\le L_Y$ and $s\in\{M,X,Y\}$ define
-\[
-    V^s_{i,j}
-    =
-    \max_{Z:\,(i_T,j_T)=(i,j),\,z_T=s}
-    \log P(X_{1:i},Y_{1:j},Z),
-\]
-with $V^s_{i,j}=-\infty$ if no such path exists.
-
-Initialization at $(0,0)$ is $V^M_{0,0}=V^X_{0,0}=V^Y_{0,0}=-\infty$. First non-empty cells:
-\[
-    V^X_{1,0} = \log\pi(X)+\log e_X(x_1),\quad
-    V^Y_{0,1} = \log\pi(Y)+\log e_Y(y_1),\quad
-    V^M_{1,1} = \log\pi(M)+\log e_M(x_1,y_1).
-\]
-Leading gaps are filled via
-\begin{align*}
-    V^X_{i,0}
-     & = \log e_X(x_i)
-    + \max\bigl\{V^M_{i-1,0}+\log a_{MX},\; V^X_{i-1,0}+\log a_{XX}\bigr\},
-    \quad i=2,\dots,L_X, \\
-    V^Y_{0,j}
-     & = \log e_Y(y_j)
-    + \max\bigl\{V^M_{0,j-1}+\log a_{MY},\; V^Y_{0,j-1}+\log a_{YY}\bigr\},
-    \quad j=2,\dots,L_Y.
-\end{align*}
-
-For $1\le i\le L_X$, $1\le j\le L_Y$:
-\begin{align*}
-    V^M_{i,j}
-     & = \log e_M(x_i,y_j)
-    + \max\bigl\{
-    V^M_{i-1,j-1}+\log a_{MM},\;
-    V^X_{i-1,j-1}+\log a_{XM},\;
-    V^Y_{i-1,j-1}+\log a_{YM}
-    \bigr\},               \\
-    V^X_{i,j}
-     & = \log e_X(x_i)
-    + \max\bigl\{
-    V^M_{i-1,j}+\log a_{MX},\;
-    V^X_{i-1,j}+\log a_{XX}
-    \bigr\},               \\
-    V^Y_{i,j}
-     & = \log e_Y(y_j)
-    + \max\bigl\{
-    V^M_{i,j-1}+\log a_{MY},\;
-    V^Y_{i,j-1}+\log a_{YY}
-    \bigr\}.
-\end{align*}
-
-\subsubsection{Termination and traceback}
-
-At $(L_X,L_Y)$ we add end probabilities:
-\[
-    \ell^\star = \max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr),
-\]
-with optimal final state
-\[
-    s^\star = \arg\max_{s\in\{M,X,Y\}} \bigl( V^s_{L_X,L_Y} + \log\rho(s) \bigr).
-\]
-We store backpointers during the DP and trace back from $(L_X,L_Y,s^\star)$ to $(0,0)$, then reverse the sequence of moves to recover the optimal alignment.
-
 
 \end{document}
