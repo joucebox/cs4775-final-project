@@ -351,15 +351,15 @@ We store backpointers during the DP and trace back from $(L_X,L_Y,s^\star)$ to $
 
 \subsection{Maximum expected accuracy (MEA) alignment}
 
-We also compute an alignment that maximizes the expected number of correctly aligned nucleotide pairs under the posterior over paths.
+In addition to the MAP (Viterbi) path, we compute an alignment that maximizes the expected number of correctly aligned nucleotide pairs under the posterior over alignment paths. This requires posterior match probabilities for each potential pair $(i,j)$, followed by a maximum-weight monotone path on the alignment grid.
 
 \subsubsection{Posterior match probabilities}
 
-For $1\le i\le L_X$, $1\le j\le L_Y$, let $M_{ij}=1$ if $x_i$ is aligned to $y_j$ in state $M$ along some path, and define
+For $1\le i\le L_X$, $1\le j\le L_Y$, let $M_{ij}=1$ if $x_i$ is aligned to $y_j$ in state $M$ along a path, and define
 \[
     P_{ij} = P(M_{ij}=1\mid X,Y).
 \]
-Using the forward-backward algorithm (detailed in Algorithm~\ref{alg:forward_backward} of the appendix), we compute $\alpha_M(i,j)$, the forward probability of reaching position $(i,j)$ in match state $M$ while aligning $(x_i,y_j)$, and $\beta_M(i,j)$, the backward probability of completing the alignment from position $(i,j)$ in match state $M$. The posterior match probability is then
+Using the forward-backward algorithm (detailed in Algorithm~\ref{alg:forward_backward} of the appendix), we compute $\alpha_M(i,j)$, the forward probability of reaching position $(i,j)$ in match state $M$ while aligning $(x_i,y_j)$, and $\beta_M(i,j)$, the backward probability of completing the alignment from position $(i,j)$ in match state $M$ (under the same indexing convention). The posterior match probability is then
 \[
     P_{ij} = \frac{\alpha_M(i,j)\,\beta_M(i,j)}{P(X,Y)},
 \]
@@ -374,14 +374,14 @@ where $(i,j)\in A$ iff $x_i$ is aligned to $y_j$. Its expected accuracy is
     \mathbb{E}[\mathrm{acc}(A)\mid X,Y]
     = \sum_{(i,j)\in A} P_{ij}.
 \]
-To provide a tunable precision-recall tradeoff, we introduce a parameter $\gamma$ and use weighted posterior probabilities $w_{ij}=f(P_{ij};\gamma)$ in the objective function. We then maximize
+To allow a tunable precision--recall tradeoff, we optionally introduce a parameter $\gamma$ and maximize a weighted objective
 \[
     A^\star = \arg\max_A \sum_{(i,j)\in A} w_{ij},
 \]
-where different choices of the weighting function $f$ and parameter $\gamma$ allow us to prioritize precision or recall. Examples of $f$ include:
+where the standard MEA objective corresponds to $w_{ij}=P_{ij}$ (equivalently, the power weighting below with $\gamma=1$). Other choices of $w_{ij}=f(P_{ij};\gamma)$ are simple variants that can emphasize high-confidence matches. Examples include:
 \begin{itemize}
     \item Power ($\gamma>0$): $w_{ij}=P_{ij}^{\gamma}$, where larger $\gamma$ emphasizes high-confidence matches
-    \item Threshold ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-(1-\gamma)$, which sets matches below threshold $\gamma$ to negative weights
+    \item Threshold ($\gamma\in(0,1]$): $w_{ij}=P_{ij}-\gamma$, which assigns negative weight to matches below threshold $\gamma$
     \item ProbCons-style ($\gamma>0.5$): $w_{ij}=2\gamma P_{ij}-1$, providing linear weighting
     \item Log-odds ($\gamma\in(0,1)$):
           \[
