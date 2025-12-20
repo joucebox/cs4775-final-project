@@ -1,19 +1,19 @@
 \begin{thebibliography}{}
 
-\bibitem[Needleman and Wunsch, 1970]{needleman-wunsch}
-Needleman SB, Wunsch CD, 1970.
-\newblock A general method applicable to the search for similarities in the amino acid sequence of two proteins.
-\newblock {\em Journal of Molecular Biology}, {48}(3):443--453.
+\bibitem[Hamada et~al., 2009]{centroidalign}
+Hamada M, Sato K, Kiryu H, Mituyama T, Asai K, 2009.
+\newblock Centroidalign: fast and accurate aligner for structured rnas by maximizing expected sum-of-pairs score.
+\newblock {\em Bioinformatics}, {25}(24):3236--3243.
 
 \bibitem[Do et~al., 2005]{probcons}
 Do CB, Mahabhashyam MSP, Brudno M, Batzoglou S, 2005.
 \newblock Probcons: Probabilistic consistency-based multiple sequence alignment.
 \newblock {\em Genome Research}, {15}(2):330--340.
 
-\bibitem[Hamada et~al., 2009]{centroidalign}
-Hamada M, Sato K, Kiryu H, Mituyama T, Asai K, 2009.
-\newblock Centroidalign: fast and accurate aligner for structured rnas by maximizing expected sum-of-pairs score.
-\newblock {\em Bioinformatics}, {25}(24):3236--3243.
+\bibitem[Needleman and Wunsch, 1970]{needleman-wunsch}
+Needleman SB, Wunsch CD, 1970.
+\newblock A general method applicable to the search for similarities in the amino acid sequence of two proteins.
+\newblock {\em Journal of Molecular Biology}, {48}(3):443--453.
 
 \bibitem[Ontiveros-Palacios et~al., 2024]{rfam}
 Ontiveros-Palacios N, Cooke E, Nawrocki EP, Triebel S, Marz M, Rivas E, Griffiths-Jones S, Petrov AI, Bateman A, Sweeney B, \emph{et~al.}, 2024.

@@ -61,7 +61,44 @@ Pairwise sequence alignment, Hidden Markov Model (HMM), Maximum Expected Accurac
 %==========================================
 % AI Use Attribution Statements (Required)
 %==========================================
-\textbf{AI Use Attribution Statements:} {\color{red} Required}
+\textbf{AI Use Attribution Statements:}
+
+\begin{enumerate}
+    \item Understanding the project and the literature
+          \begin{itemize}
+              \item \textbf{Tool:} Gemini (Google)
+              \item \textbf{Prompts Used:}
+                    \begin{itemize}
+                        \item \textit{Access [\url{https://github.com/joucebox/cs4775-final-project}] and read the readme and the src code. Explain what this project does.}
+                        \item (Uploaded PDFs of the CentroidAlign \cite{centroidalign} and ProbCons \cite{probcons} papers) \textit{Read the two papers cited} and \textit{explain what this project does} in the context of the provided files.
+                    \end{itemize}
+              \item \textbf{Influence on Work:} The AI summarized the GitHub repository structure and code functionality, explaining the core differences between the Viterbi and Maximum Expected Accuracy (MEA) algorithms. It analyzed the uploaded papers to clarify how the project's weighting schemes (Power, Threshold, ProbCons, Log-odds) derive from the $\gamma$-centroid estimator in \emph{CentroidAlign} \cite{centroidalign} and the probabilistic consistency transformation in \emph{ProbCons} \cite{probcons}. We used this information to help us write the literature review section of the report.
+          \end{itemize}
+    \item Verifying the derivation of the MAP (maximum a posteriori) alignment equation
+          \begin{itemize}
+              \item \textbf{Tool:} Gemini (Google)
+              \item \textbf{Prompt Used:}
+                    \begin{itemize}
+                        \item \textit{Is this true? The maximum a posteriori (MAP) alignment is given by
+                                  $
+                                      Z^\star = \arg\max_{Z\in\mathcal{Z}(X,Y)} P(Z~|~X,Y)
+                                      = \arg\max_{Z\in\mathcal{Z}(X,Y)} \log P(X, Y, Z).
+                                  $
+                              }
+                    \end{itemize}
+              \item \textbf{Influence on Work:} The AI confirmed that each step in the MAP alignment derivation was mathematically correct, including the use of Bayes' rule and the application of the logarithm's monotonicity. The AI further explained why the denominator $P(X,Y)$ can be dropped when searching for the maximizer. This assurance helped us finalize and clearly explain the Viterbi algorithm equations in the report.
+          \end{itemize}
+    \item Clarification of Bayesian estimators for alignment
+          \begin{itemize}
+              \item \textbf{Tool:} ChatGPT (GPT-5.2 Thinking)
+              \item \textbf{Prompt Used:}
+                    \begin{itemize}
+                        \item \textit{The distinction between Viterbi and MEA is rooted in Bayesian decision theory. Write the different estimators for Viterbi and MEA.}
+                    \end{itemize}
+              \item \textbf{Influence on Work:} ChatGPT helped draft the mathematical distinction between the Viterbi estimator (MAP estimator), and the MEA estimator (which selects the alignment maximizing the expected number of correctly aligned residue pairs under the posterior). It provided clear Bayesian decision theory equations for each. We used this information to help us write the theoretical framework section of the report.
+          \end{itemize}
+
+\end{enumerate}
 
 
 
@@ -69,18 +106,6 @@ Pairwise sequence alignment, Hidden Markov Model (HMM), Maximum Expected Accurac
 % Acknowledgements (Optional)
 %===============================
 % \textbf{Acknowledgements}
-
-
-
-\vspace{2em}
-\textbf{Note:}
-\begin{itemize}
-    \item This is the title page (\ul{required}). It does NOT count toward the minimum page requirement.
-    \item {\color{red} In the main text, do NOT adjust margins, font size, character spacing, line spacing, or add blank lines to artificially increase the number of pages to meet the minimum page limit. Doing so will result in a significant point deduction.}
-    \item Please read the ``Final Project Report Guide'' on Canvas carefully.
-    \item Each group member must submit the ``Author Contribution'' form individually. The template is available on Canvas. Please note that, while the final report is a group submission, \ul{the author contribution form is an individual submission}. Failure to submit the author contribution form by the due date will result in a 1-point deduction from the final report grade.
-\end{itemize}
-
 
 
 
