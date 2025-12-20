@@ -359,9 +359,9 @@ For $1\le i\le L_X$, $1\le j\le L_Y$, let $M_{ij}=1$ if $x_i$ is aligned to $y_j
 \[
     P_{ij} = P(M_{ij}=1\mid X,Y).
 \]
-Using the forward-backward algorithm (detailed in Algorithm~\ref{alg:forward_backward} of the appendix), we compute $\alpha_M(i,j)$, the forward probability of reaching position $(i,j)$ in match state $M$ while aligning $(x_i,y_j)$, and $\beta_M(i,j)$, the backward probability of completing the alignment from position $(i,j)$ in match state $M$ (under the same indexing convention). The posterior match probability is then
+Using the forward-backward algorithm (detailed in Algorithm~\ref{alg:forward_backward} of the appendix), we compute $F_M(i,j)$, the forward log-probability of reaching position $(i,j)$ in match state $M$ while aligning $(x_i,y_j)$, and $B_M(i,j)$, the backward log-probability of completing the alignment from position $(i,j)$ in match state $M$ (under the same indexing convention). The posterior match probability is then
 \[
-    P_{ij} = \frac{\alpha_M(i,j)\,\beta_M(i,j)}{P(X,Y)},
+    P_{ij} = \frac{e^{F_M(i,j)+B_M(i,j)}}{e^{\log P(X,Y)}} = \frac{e^{F_M(i,j)+B_M(i,j)}}{P(X,Y)},
 \]
 where $P(X,Y)$ is the marginal likelihood of the sequences. We arrange $P_{ij}$ in a matrix $P\in[0,1]^{(L_X+1)\times(L_Y+1)}$ with $P[0,\cdot]=P[\cdot,0]=0$.
 
