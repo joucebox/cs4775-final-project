@@ -97,7 +97,17 @@ Pairwise sequence alignment, Hidden Markov Model (HMM), Maximum Expected Accurac
                     \end{itemize}
               \item \textbf{Influence on Work:} ChatGPT helped draft the mathematical distinction between the Viterbi estimator (MAP estimator), and the MEA estimator (which selects the alignment maximizing the expected number of correctly aligned residue pairs under the posterior). It provided clear Bayesian decision theory equations for each. We used this information to help us write the theoretical framework section of the report.
           \end{itemize}
-
+    \item Verification and revision of Viterbi and MEA report sections
+          \begin{itemize}
+              \item \textbf{Tool:} ChatGPT (GPT-5.2 Thinking)
+              \item \textbf{Prompts Used:}
+                    \begin{itemize}
+                        \item \textit{Check whether my LaTeX write-up of Viterbi/MAP decoding for a 3-state Pair-HMM is correct, and suggest minimal corrections.}
+                        \item \textit{Check whether my Bayesian decision-theory explanation of Viterbi vs MEA is correct, and suggest minimal corrections if needed.}
+                        \item \textit{Check whether my MEA section (posterior match probabilities via forward---backward, weighted objective with $\gamma$, and DP reconstruction) is correct. Point out errors if any.}
+                    \end{itemize}
+              \item \textbf{Influence on Work:} ChatGPT identified technical issues (e.g., MAP vs joint-probability wording, DP base-case/loop-range handling, and a threshold-weighting inconsistency), suggested concise clarifications, such as explicitly stating some assumptions, and suggested minimal edits to improve readability. We used these corrections and improvements to help us develop the report.
+          \end{itemize}
 \end{enumerate}
 
 
@@ -295,7 +305,7 @@ Then
 
 We estimate pair-HMM parameters from gold-standard alignments using maximum likelihood estimation with pseudocount regularization. Each reference alignment provides labeled training data where columns are classified as match, insertion in X, or insertion in Y states. We collect sufficient statistics across all alignments and normalize to obtain emission and transition probability estimates. The full mathematical formulation, including column-wise state labeling, sufficient statistics computation, and parameter estimation with affine gap penalties, is provided in Algorithm~\ref{alg:param_est} of the appendix.
 
-\subsection{Forward--backward inference}
+\subsection{Forward---backward inference}
 
 We implement an equivalent formulation to the forward-backward algorithm covered in class, adapted for the pair-HMM topology. The algorithm computes posterior probabilities over alignment paths using log-space dynamic programming on a 2D grid representing consumed prefixes of both sequences. Forward probabilities accumulate the likelihood of reaching each grid position, while backward probabilities compute the likelihood of completing the alignment from each position. The full algorithm, including initialization, recurrence relations, and log-sum-exp operations for numerical stability, is detailed in Algorithm~\ref{alg:forward_backward} of the appendix.
 
