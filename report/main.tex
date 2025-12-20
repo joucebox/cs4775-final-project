@@ -533,19 +533,6 @@ For multiple sequence alignment (MSA) applications, the costs scale more steeply
 
 The computational overhead of MEA relative to Viterbi is modest in absolute terms and minimal relative to the accuracy improvements observed (average $\Delta$F1 $\sim 1\%-3\%$ depending on weighting scheme). For applications prioritizing alignment accuracy—particularly in the analysis of low-similarity divergent RNAs—the 5--6x cost multiplier is a worthwhile investment. Conversely, for massive-scale alignment tasks (e.g., metagenomics with millions of sequences) or where latency is a critical constraint, Viterbi may remain preferable. The framework presented here allows practitioners to make this choice explicitly: run Viterbi for speed, or invest in forward-backward + MEA for maximum accuracy.
 
-\subsection{Weighting Schemes}
-
-Our systematic comparison of four MEA weighting schemes reveals distinct precision-recall characteristics:
-
-\begin{itemize}
-    \item \textbf{Power weighting}
-    \item \textbf{Threshold weighting}
-    \item \textbf{ProbCons-style weighting}
-    \item \textbf{Log-odds weighting}
-\end{itemize}
-
-The choice of weighting scheme should be guided by the specific biological application and desired precision-recall tradeoffs.
-
 \subsection{Future Directions}
 
 This work focused on pairwise alignment using sequence-only Pair-HMMs. Several avenues for extension exist:
